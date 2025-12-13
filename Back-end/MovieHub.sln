@@ -1,0 +1,95 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+
+# Shared Libraries
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Shared.Kernel", "src\Shared\MovieHub.Shared.Kernel\MovieHub.Shared.Kernel.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+EndProject
+
+# Microservices
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Auth.API", "src\Services\Auth\MovieHub.Services.Auth.API\MovieHub.Services.Auth.API.csproj", "{B1C2D3E4-F5A6-7890-BCDE-FA1234567890}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Auth.Application", "src\Services\Auth\MovieHub.Services.Auth.Application\MovieHub.Services.Auth.Application.csproj", "{C1D2E3F4-A5B6-7890-CDEF-AB1234567890}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Auth.Domain", "src\Services\Auth\MovieHub.Services.Auth.Domain\MovieHub.Services.Auth.Domain.csproj", "{D1E2F3A4-B5C6-7890-DEFA-BC1234567890}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Auth.Infrastructure", "src\Services\Auth\MovieHub.Services.Auth.Infrastructure\MovieHub.Services.Auth.Infrastructure.csproj", "{E1F2A3B4-C5D6-7890-EFAB-CD1234567890}"
+EndProject
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.User.API", "src\Services\User\MovieHub.Services.User.API\MovieHub.Services.User.API.csproj", "{F1A2B3C4-D5E6-7890-FABC-DE1234567890}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.User.Application", "src\Services\User\MovieHub.Services.User.Application\MovieHub.Services.User.Application.csproj", "{A2B3C4D5-E6F7-8901-ABCD-EF2345678901}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.User.Domain", "src\Services\User\MovieHub.Services.User.Domain\MovieHub.Services.User.Domain.csproj", "{B2C3D4E5-F6A7-8901-BCDE-FA2345678901}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.User.Infrastructure", "src\Services\User\MovieHub.Services.User.Infrastructure\MovieHub.Services.User.Infrastructure.csproj", "{C2D3E4F5-A6B7-8901-CDEF-AB2345678901}"
+EndProject
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.MovieMetadata.API", "src\Services\MovieMetadata\MovieHub.Services.MovieMetadata.API\MovieHub.Services.MovieMetadata.API.csproj", "{D2E3F4A5-B6C7-8901-DEFA-BC2345678901}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.MovieMetadata.Application", "src\Services\MovieMetadata\MovieHub.Services.MovieMetadata.Application\MovieHub.Services.MovieMetadata.Application.csproj", "{E2F3A4B5-C6D7-8901-EFAB-CD2345678901}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.MovieMetadata.Domain", "src\Services\MovieMetadata\MovieHub.Services.MovieMetadata.Domain\MovieHub.Services.MovieMetadata.Domain.csproj", "{F2A3B4C5-D6E7-8901-FABC-DE2345678901}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.MovieMetadata.Infrastructure", "src\Services\MovieMetadata\MovieHub.Services.MovieMetadata.Infrastructure\MovieHub.Services.MovieMetadata.Infrastructure.csproj", "{A3B4C5D6-E7F8-9012-ABCD-EF3456789012}"
+EndProject
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Upload.API", "src\Services\Upload\MovieHub.Services.Upload.API\MovieHub.Services.Upload.API.csproj", "{B3C4D5E6-F7A8-9012-BCDE-FA3456789012}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Upload.Application", "src\Services\Upload\MovieHub.Services.Upload.Application\MovieHub.Services.Upload.Application.csproj", "{C3D4E5F6-A7B8-9012-CDEF-AB3456789012}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Upload.Domain", "src\Services\Upload\MovieHub.Services.Upload.Domain\MovieHub.Services.Upload.Domain.csproj", "{D3E4F5A6-B7C8-9012-DEFA-BC3456789012}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Upload.Infrastructure", "src\Services\Upload\MovieHub.Services.Upload.Infrastructure\MovieHub.Services.Upload.Infrastructure.csproj", "{E3F4A5B6-C7D8-9012-EFAB-CD3456789012}"
+EndProject
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Workers.VideoProcessing", "src\Workers\VideoProcessing\MovieHub.Workers.VideoProcessing\MovieHub.Workers.VideoProcessing.csproj", "{F3A4B5C6-D7E8-9012-FABC-DE3456789012}"
+EndProject
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Streaming.API", "src\Services\Streaming\MovieHub.Services.Streaming.API\MovieHub.Services.Streaming.API.csproj", "{A4B5C6D7-E8F9-0123-ABCD-EF4567890123}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Streaming.Application", "src\Services\Streaming\MovieHub.Services.Streaming.Application\MovieHub.Services.Streaming.Application.csproj", "{B4C5D6E7-F8A9-0123-BCDE-FA4567890123}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Streaming.Domain", "src\Services\Streaming\MovieHub.Services.Streaming.Domain\MovieHub.Services.Streaming.Domain.csproj", "{C4D5E6F7-A8B9-0123-CDEF-AB4567890123}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Streaming.Infrastructure", "src\Services\Streaming\MovieHub.Services.Streaming.Infrastructure\MovieHub.Services.Streaming.Infrastructure.csproj", "{D4E5F6A7-B8C9-0123-DEFA-BC4567890123}"
+EndProject
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Library.API", "src\Services\Library\MovieHub.Services.Library.API\MovieHub.Services.Library.API.csproj", "{E4F5A6B7-C8D9-0123-EFAB-CD4567890123}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Library.Application", "src\Services\Library\MovieHub.Services.Library.Application\MovieHub.Services.Library.Application.csproj", "{F4A5B6C7-D8E9-0123-FABC-DE4567890123}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Library.Domain", "src\Services\Library\MovieHub.Services.Library.Domain\MovieHub.Services.Library.Domain.csproj", "{A5B6C7D8-E9F0-1234-ABCD-EF5678901234}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Library.Infrastructure", "src\Services\Library\MovieHub.Services.Library.Infrastructure\MovieHub.Services.Library.Infrastructure.csproj", "{B5C6D7E8-F9A0-1234-BCDE-FA5678901234}"
+EndProject
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Torrent.API", "src\Services\Torrent\MovieHub.Services.Torrent.API\MovieHub.Services.Torrent.API.csproj", "{C5D6E7F8-A9B0-1234-CDEF-AB5678901234}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Torrent.Application", "src\Services\Torrent\MovieHub.Services.Torrent.Application\MovieHub.Services.Torrent.Application.csproj", "{D5E6F7A8-B9C0-1234-DEFA-BC5678901234}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Torrent.Domain", "src\Services\Torrent\MovieHub.Services.Torrent.Domain\MovieHub.Services.Torrent.Domain.csproj", "{E5F6A7B8-C9D0-1234-EFAB-CD5678901234}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Torrent.Infrastructure", "src\Services\Torrent\MovieHub.Services.Torrent.Infrastructure\MovieHub.Services.Torrent.Infrastructure.csproj", "{F5A6B7C8-D9E0-1234-FABC-DE5678901234}"
+EndProject
+
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Notification.API", "src\Services\Notification\MovieHub.Services.Notification.API\MovieHub.Services.Notification.API.csproj", "{A6B7C8D9-E0F1-2345-ABCD-EF6789012345}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Notification.Application", "src\Services\Notification\MovieHub.Services.Notification.Application\MovieHub.Services.Notification.Application.csproj", "{B6C7D8E9-F0A1-2345-BCDE-FA6789012345}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Notification.Domain", "src\Services\Notification\MovieHub.Services.Notification.Domain\MovieHub.Services.Notification.Domain.csproj", "{C6D7E8F9-A0B1-2345-CDEF-AB6789012345}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MovieHub.Services.Notification.Infrastructure", "src\Services\Notification\MovieHub.Services.Notification.Infrastructure\MovieHub.Services.Notification.Infrastructure.csproj", "{D6E7F8A9-B0C1-2345-DEFA-BC6789012345}"
+EndProject
+
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
