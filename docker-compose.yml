@@ -1,0 +1,372 @@
+services:
+  # Infrastructure Services
+  postgres:
+    image: postgres:16-alpine
+    container_name: moviehub-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: moviehub
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./Back-end/scripts/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    networks:
+      - moviehub-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.3
+    container_name: moviehub-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - moviehub-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.3
+    container_name: moviehub-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - moviehub-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: moviehub-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - moviehub-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: moviehub-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus-data:/prometheus
+      - ./Back-end/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - moviehub-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: moviehub-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./Back-end/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./Back-end/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - moviehub-network
+
+  # Microservices
+  auth-service:
+    build:
+      context: ./Back-end
+      dockerfile: src/Services/Auth/Dockerfile
+    container_name: moviehub-auth-service
+    ports:
+      - "5001:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=moviehub_auth;Username=postgres;Password=postgres
+      - JwtSettings__Secret=your-super-secret-key-that-should-be-at-least-32-characters-long
+      - JwtSettings__Issuer=MovieHub.AuthService
+      - JwtSettings__Audience=MovieHub.Client
+      - ASPNETCORE_URLS=http://+:80
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - moviehub-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  movie-service:
+    build:
+      context: ./Back-end
+      dockerfile: src/Services/Movie/Dockerfile
+    container_name: moviehub-movie-service
+    ports:
+      - "5003:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+    networks:
+      - moviehub-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  library-service:
+    build:
+      context: ./Back-end
+      dockerfile: src/Services/Library/Dockerfile
+    container_name: moviehub-library-service
+    ports:
+      - "5006:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+    networks:
+      - moviehub-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Frontend
+  frontend:
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+    container_name: moviehub-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      # Use localhost for browser-side requests since they come from the user's browser
+      - NEXT_PUBLIC_API_URL=http://localhost:5001/api/v1
+    depends_on:
+      - auth-service
+      - movie-service
+      - library-service
+    networks:
+      - moviehub-network
+    restart: unless-stopped
+
+  # Uncomment services below as you implement them
+  # user-service:
+  #   build:
+  #     context: .
+  #     dockerfile: src/Services/User/Dockerfile
+  #   container_name: moviehub-user-service
+  #   ports:
+  #     - "5002:80"
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=moviehub_user;Username=postgres;Password=postgres
+  #     - JwtSettings__Secret=your-super-secret-key-that-should-be-at-least-32-characters-long
+  #     - JwtSettings__Issuer=MovieHub.AuthService
+  #     - JwtSettings__Audience=MovieHub.Client
+  #     - Kafka__BootstrapServers=kafka:9092
+  #   depends_on:
+  #     - postgres
+  #     - kafka
+  #   networks:
+  #     - moviehub-network
+  #   restart: unless-stopped
+
+  # movie-metadata-service:
+  #   build:
+  #     context: .
+  #     dockerfile: src/Services/MovieMetadata/Dockerfile
+  #   container_name: moviehub-movie-metadata-service
+  #   ports:
+  #     - "5003:80"
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=moviehub_movies;Username=postgres;Password=postgres
+  #     - JwtSettings__Secret=your-super-secret-key-that-should-be-at-least-32-characters-long
+  #     - JwtSettings__Issuer=MovieHub.AuthService
+  #     - JwtSettings__Audience=MovieHub.Client
+  #     - Kafka__BootstrapServers=kafka:9092
+  #   depends_on:
+  #     - postgres
+  #     - kafka
+  #   networks:
+  #     - moviehub-network
+  #   restart: unless-stopped
+
+  # upload-service:
+  #   build:
+  #     context: .
+  #     dockerfile: src/Services/Upload/Dockerfile
+  #   container_name: moviehub-upload-service
+  #   ports:
+  #     - "5004:80"
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=moviehub_upload;Username=postgres;Password=postgres
+  #     - JwtSettings__Secret=your-super-secret-key-that-should-be-at-least-32-characters-long
+  #     - JwtSettings__Issuer=MovieHub.AuthService
+  #     - JwtSettings__Audience=MovieHub.Client
+  #     - Kafka__BootstrapServers=kafka:9092
+  #     - GoogleCloud__ProjectId=moviehub-project
+  #     - GoogleCloud__BucketName=moviehub-uploads
+  #   depends_on:
+  #     - postgres
+  #     - kafka
+  #   networks:
+  #     - moviehub-network
+  #   restart: unless-stopped
+
+  # streaming-service:
+  #   build:
+  #     context: .
+  #     dockerfile: src/Services/Streaming/Dockerfile
+  #   container_name: moviehub-streaming-service
+  #   ports:
+  #     - "5005:80"
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=moviehub_streaming;Username=postgres;Password=postgres
+  #     - JwtSettings__Secret=your-super-secret-key-that-should-be-at-least-32-characters-long
+  #     - JwtSettings__Issuer=MovieHub.AuthService
+  #     - JwtSettings__Audience=MovieHub.Client
+  #     - GoogleCloud__ProjectId=moviehub-project
+  #     - GoogleCloud__BucketName=moviehub-streams
+  #     - Redis__ConnectionString=redis:6379
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   networks:
+  #     - moviehub-network
+  #   restart: unless-stopped
+
+  # library-service:
+  #   build:
+  #     context: .
+  #     dockerfile: src/Services/Library/Dockerfile
+  #   container_name: moviehub-library-service
+  #   ports:
+  #     - "5006:80"
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=moviehub_library;Username=postgres;Password=postgres
+  #     - JwtSettings__Secret=your-super-secret-key-that-should-be-at-least-32-characters-long
+  #     - JwtSettings__Issuer=MovieHub.AuthService
+  #     - JwtSettings__Audience=MovieHub.Client
+  #     - Kafka__BootstrapServers=kafka:9092
+  #   depends_on:
+  #     - postgres
+  #     - kafka
+  #   networks:
+  #     - moviehub-network
+  #   restart: unless-stopped
+
+  # torrent-service:
+  #   build:
+  #     context: .
+  #     dockerfile: src/Services/Torrent/Dockerfile
+  #   container_name: moviehub-torrent-service
+  #   ports:
+  #     - "5007:80"
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=moviehub_torrent;Username=postgres;Password=postgres
+  #     - JwtSettings__Secret=your-super-secret-key-that-should-be-at-least-32-characters-long
+  #     - JwtSettings__Issuer=MovieHub.AuthService
+  #     - JwtSettings__Audience=MovieHub.Client
+  #     - Kafka__BootstrapServers=kafka:9092
+  #     - GoogleCloud__ProjectId=moviehub-project
+  #     - GoogleCloud__BucketName=moviehub-torrents
+  #   depends_on:
+  #     - postgres
+  #     - kafka
+  #   networks:
+  #     - moviehub-network
+  #   restart: unless-stopped
+
+  # notification-service:
+  #   build:
+  #     context: .
+  #     dockerfile: src/Services/Notification/Dockerfile
+  #   container_name: moviehub-notification-service
+  #   ports:
+  #     - "5008:80"
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=moviehub_notification;Username=postgres;Password=postgres
+  #     - Kafka__BootstrapServers=kafka:9092
+  #     - Email__SmtpHost=smtp.gmail.com
+  #     - Email__SmtpPort=587
+  #     - Email__From=noreply@moviehub.com
+  #   depends_on:
+  #     - postgres
+  #     - kafka
+  #   networks:
+  #     - moviehub-network
+  #   restart: unless-stopped
+
+  # video-processing-worker:
+  #   build:
+  #     context: .
+  #     dockerfile: src/Workers/VideoProcessing/Dockerfile
+  #   container_name: moviehub-video-processing-worker
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=moviehub_processing;Username=postgres;Password=postgres
+  #     - Kafka__BootstrapServers=kafka:9092
+  #     - GoogleCloud__ProjectId=moviehub-project
+  #     - GoogleCloud__SourceBucket=moviehub-uploads
+  #     - GoogleCloud__DestinationBucket=moviehub-streams
+  #     - FFmpeg__Path=/usr/bin/ffmpeg
+  #   depends_on:
+  #     - postgres
+  #     - kafka
+  #   networks:
+  #     - moviehub-network
+  #   restart: unless-stopped
+
+networks:
+  moviehub-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  prometheus-data:
+  grafana-data:

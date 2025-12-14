@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: moviehub
+  labels:
+    istio-injection: enabled
+    name: moviehub

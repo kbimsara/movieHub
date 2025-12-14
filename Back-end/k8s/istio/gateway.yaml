@@ -1,0 +1,126 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: moviehub-gateway
+  namespace: moviehub
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "api.moviehub.com"
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: moviehub-tls-cert
+    hosts:
+    - "api.moviehub.com"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: moviehub-routes
+  namespace: moviehub
+spec:
+  hosts:
+  - "api.moviehub.com"
+  gateways:
+  - moviehub-gateway
+  http:
+  - match:
+    - uri:
+        prefix: "/api/v1/auth"
+    route:
+    - destination:
+        host: auth-service
+        port:
+          number: 80
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+  - match:
+    - uri:
+        prefix: "/api/v1/users"
+    route:
+    - destination:
+        host: user-service
+        port:
+          number: 80
+    timeout: 30s
+  - match:
+    - uri:
+        prefix: "/api/v1/movies"
+    route:
+    - destination:
+        host: movie-metadata-service
+        port:
+          number: 80
+    timeout: 30s
+  - match:
+    - uri:
+        prefix: "/api/v1/upload"
+    route:
+    - destination:
+        host: upload-service
+        port:
+          number: 80
+    timeout: 300s
+  - match:
+    - uri:
+        prefix: "/api/v1/stream"
+    route:
+    - destination:
+        host: streaming-service
+        port:
+          number: 80
+    timeout: 60s
+  - match:
+    - uri:
+        prefix: "/api/v1/library"
+    route:
+    - destination:
+        host: library-service
+        port:
+          number: 80
+    timeout: 30s
+  - match:
+    - uri:
+        prefix: "/api/v1/torrents"
+    route:
+    - destination:
+        host: torrent-service
+        port:
+          number: 80
+    timeout: 30s
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: moviehub
+spec:
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: moviehub-authz
+  namespace: moviehub
+spec:
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals: ["*"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
