@@ -1,5 +1,11 @@
-import apiClient from '@/lib/axios';
+import axios from 'axios';
 import { ApiResponse, Movie, PaginatedResponse, SearchFilters, PaginationParams } from '@/types';
+
+const movieClient = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_MOVIE_API_URL || 'http://localhost:5003/api/v1',
+  timeout: 30000,
+  headers: { 'Content-Type': 'application/json' },
+});
 
 export const movieService = {
   // Get all movies with filters
@@ -8,31 +14,31 @@ export const movieService = {
     pagination?: PaginationParams
   ): Promise<ApiResponse<PaginatedResponse<Movie>>> {
     const params = { ...filters, ...pagination };
-    const response = await apiClient.get('/movies', { params });
+    const response = await movieClient.get('/Movies', { params });
     return response.data;
   },
 
   // Get movie by ID
   async getMovieById(id: string): Promise<ApiResponse<Movie>> {
-    const response = await apiClient.get(`/movies/${id}`);
+    const response = await movieClient.get(`/Movies/${id}`);
     return response.data;
   },
 
   // Get trending movies
   async getTrendingMovies(): Promise<ApiResponse<Movie[]>> {
-    const response = await apiClient.get('/movies/trending');
+    const response = await movieClient.get('/Movies/trending');
     return response.data;
   },
 
   // Get popular movies
   async getPopularMovies(): Promise<ApiResponse<Movie[]>> {
-    const response = await apiClient.get('/movies/popular');
+    const response = await movieClient.get('/Movies/popular');
     return response.data;
   },
 
   // Get top rated movies
   async getTopRatedMovies(): Promise<ApiResponse<Movie[]>> {
-    const response = await apiClient.get('/movies/top-rated');
+    const response = await movieClient.get('/Movies/top-rated');
     return response.data;
   },
 

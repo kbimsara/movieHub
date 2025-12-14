@@ -1,10 +1,16 @@
-import apiClient from '@/lib/axios';
+import axios from 'axios';
 import { ApiResponse, LibraryItem, WatchHistory, PaginatedResponse } from '@/types';
+
+const libraryClient = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_LIBRARY_API_URL || 'http://localhost:5006/api/v1',
+  timeout: 30000,
+  headers: { 'Content-Type': 'application/json' },
+});
 
 export const libraryService = {
   // Get user library
   async getLibrary(): Promise<ApiResponse<LibraryItem[]>> {
-    const response = await apiClient.get('/library');
+    const response = await libraryClient.get('/Library');
     return response.data;
   },
 
@@ -34,7 +40,7 @@ export const libraryService = {
 
   // Get continue watching
   async getContinueWatching(): Promise<ApiResponse<LibraryItem[]>> {
-    const response = await apiClient.get('/library/continue-watching');
+    const response = await libraryClient.get('/Library/continue-watching');
     return response.data;
   },
 

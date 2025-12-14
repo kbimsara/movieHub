@@ -31,6 +31,18 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
+    // Handle connection errors (service not available)
+    if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK' || !error.response) {
+      console.warn(`Backend service not available: ${originalRequest.url}. Using fallback.`);
+      return Promise.reject(error);
+    }
+
+    // Handle 404 errors (endpoint not implemented yet)
+    if (error.response?.status === 404) {
+      console.warn(`Endpoint not implemented: ${originalRequest.url}`);
+      return Promise.reject(error);
+    }
+
     // Handle 401 errors (token expired)
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
