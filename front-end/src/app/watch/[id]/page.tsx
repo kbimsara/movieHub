@@ -61,7 +61,7 @@ export default function WatchPage() {
         <h1 className="text-3xl font-bold mb-2">{currentMovie.title}</h1>
         <p className="text-gray-400 mb-4">{currentMovie.description}</p>
         <div className="flex gap-2">
-          {currentMovie.genres.map((genre) => (
+          {currentMovie.genres?.map((genre) => (
             <span key={genre} className="px-3 py-1 bg-gray-800 rounded-full text-sm">
               {genre}
             </span>

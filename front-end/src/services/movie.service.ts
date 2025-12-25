@@ -44,25 +44,25 @@ export const movieService = {
 
   // Get movies by genre
   async getMoviesByGenre(genre: string): Promise<ApiResponse<Movie[]>> {
-    const response = await apiClient.get(`/movies/genre/${genre}`);
+    const response = await movieClient.get(`/movies/genre/${genre}`);
     return response.data;
   },
 
   // Get related movies
   async getRelatedMovies(movieId: string): Promise<ApiResponse<Movie[]>> {
-    const response = await apiClient.get(`/movies/${movieId}/related`);
+    const response = await movieClient.get(`/movies/${movieId}/related`);
     return response.data;
   },
 
   // Search movies
   async searchMovies(query: string): Promise<ApiResponse<Movie[]>> {
-    const response = await apiClient.get('/movies/search', { params: { q: query } });
+    const response = await movieClient.get('/movies/search', { params: { q: query } });
     return response.data;
   },
 
   // Get all genres
   async getGenres(): Promise<ApiResponse<string[]>> {
-    const response = await apiClient.get('/movies/genres');
+    const response = await movieClient.get('/movies/genres');
     return response.data;
   },
 };
