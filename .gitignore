@@ -231,21 +231,14 @@ Desktop.ini
 # ========================================
 # Documentation
 # ========================================
-
-front-end/*.md
-
+# Keep all README files
+!**/README.md
 
 # ========================================
 # .NET Solution Files (Keep .sln and .slnx)
 # ========================================
 # All .sln files should be committed
 # *.sln.slnx should be committed for Visual Studio 2022+
-
-# ========================================
-# README Exclusions
-# ========================================
-# Keep service README files
-!services/**/README.md
 # ========================================
 # Temporary files
 # ========================================
