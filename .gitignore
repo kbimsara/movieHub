@@ -65,6 +65,7 @@ next-env.d.ts
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+*.code-workspace
 
 # Rider
 .idea/
@@ -100,15 +101,16 @@ bld/
 !**/packages/build/
 *.nuget.props
 *.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
 
-# Entity Framework
+# Entity Framework Core
 *.mdf
 *.ldf
 *.ndf
-
-# SQL Server files
-*.mdf
-*.ldf
+Migrations/**/*.Designer.cs
+# Note: Migrations folder itself should be committed
 
 # Business Intelligence projects
 *.rdl.data
@@ -143,11 +145,18 @@ docker-compose.override.yml
 *.db
 *.db-shm
 *.db-wal
-*.sqlite
-*.sqlite3
+*.PostgreSQL
+pgdata/
 
-# Environment files
+# Environment files (DO NOT commit secrets)
 services/**/.env
+services/**/.env.local
+services/**/.env.production
+services/DB/.env.local
+
+# Configuration files with secrets (if needed, use .example files)
+**/appsettings.Production.json
+**/appsettings.Secrets.json
 services/**/.env.local
 services/**/.env.production
 services/DB/.env.local
@@ -182,6 +191,18 @@ Desktop.ini
 
 front-end/*.md
 
+
+# ========================================
+# .NET Solution Files (Keep .sln and .slnx)
+# ========================================
+# All .sln files should be committed
+# *.sln.slnx should be committed for Visual Studio 2022+
+
+# ========================================
+# README Exclusions
+# ========================================
+# Keep service README files
+!services/**/README.md
 # ========================================
 # Temporary files
 # ========================================
