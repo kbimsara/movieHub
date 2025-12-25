@@ -19,8 +19,16 @@ export function useAuth() {
           const response = await authService.getCurrentUser();
           if (response.success && response.data) {
             dispatch(setUser(response.data));
+          } else {
+            // Invalid response, clear tokens
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            dispatch(logoutAction());
           }
         } catch (error) {
+          // Token expired or invalid, clear it silently
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
           dispatch(logoutAction());
         }
       }
@@ -31,6 +39,10 @@ export function useAuth() {
 
   const login = async (credentials: LoginCredentials) => {
     try {
+      // Clear any existing tokens before login
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      
       const response = await authService.login(credentials);
       if (response.success && response.data) {
         dispatch(setCredentials(response.data));

@@ -16,25 +16,25 @@ export const libraryService = {
 
   // Add movie to library
   async addToLibrary(movieId: string): Promise<ApiResponse<LibraryItem>> {
-    const response = await apiClient.post('/library', { movieId });
+    const response = await libraryClient.post('/library', { movieId });
     return response.data;
   },
 
   // Remove from library
   async removeFromLibrary(movieId: string): Promise<ApiResponse<null>> {
-    const response = await apiClient.delete(`/library/${movieId}`);
+    const response = await libraryClient.delete(`/library/${movieId}`);
     return response.data;
   },
 
   // Toggle favorite
   async toggleFavorite(movieId: string): Promise<ApiResponse<LibraryItem>> {
-    const response = await apiClient.put(`/library/${movieId}/favorite`);
+    const response = await libraryClient.put(`/library/${movieId}/favorite`);
     return response.data;
   },
 
   // Update watch progress
   async updateProgress(movieId: string, progress: number): Promise<ApiResponse<LibraryItem>> {
-    const response = await apiClient.put(`/library/${movieId}/progress`, { progress });
+    const response = await libraryClient.put(`/library/${movieId}/progress`, { progress });
     return response.data;
   },
 
@@ -46,19 +46,19 @@ export const libraryService = {
 
   // Get favorites
   async getFavorites(): Promise<ApiResponse<LibraryItem[]>> {
-    const response = await apiClient.get('/library/favorites');
+    const response = await libraryClient.get('/library/favorites');
     return response.data;
   },
 
   // Get watch history
   async getWatchHistory(page: number = 1, limit: number = 20): Promise<ApiResponse<PaginatedResponse<WatchHistory>>> {
-    const response = await apiClient.get('/library/history', { params: { page, limit } });
+    const response = await libraryClient.get('/library/history', { params: { page, limit } });
     return response.data;
   },
 
   // Clear watch history
   async clearHistory(): Promise<ApiResponse<null>> {
-    const response = await apiClient.delete('/library/history');
+    const response = await libraryClient.delete('/library/history');
     return response.data;
   },
 };

@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api/v1';
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
@@ -55,22 +55,24 @@ apiClient.interceptors.response.use(
 
         // Try to refresh token
         const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-          refreshToken,
+          RefreshToken: refreshToken,
         });
 
-        const { accessToken } = response.data;
-        localStorage.setItem('accessToken', accessToken);
+        const { data } = response.data;
+        if (data?.accessToken) {
+          localStorage.setItem('accessToken', data.accessToken);
 
-        // Retry original request
-        if (originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          // Retry original request
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+          }
+          return apiClient(originalRequest);
         }
-        return apiClient(originalRequest);
+        throw new Error('Invalid refresh response');
       } catch (refreshError) {
-        // Refresh failed, logout user
+        // Refresh failed, clear tokens but don't redirect
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/auth/login';
         return Promise.reject(refreshError);
       }
     }

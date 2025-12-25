@@ -13,10 +13,16 @@ import { Label } from '@/components/ui/label';
 import { Film } from 'lucide-react';
 
 const registerSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters'),
+  firstName: z.string().min(1, 'First name is required').max(50, 'First name must not exceed 50 characters'),
+  lastName: z.string().min(1, 'Last name is required').max(50, 'Last name must not exceed 50 characters'),
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[@$!%*?&#]/, 'Password must contain at least one special character'),
+  confirmPassword: z.string().min(8, 'Password must be at least 8 characters'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
@@ -42,7 +48,12 @@ export default function RegisterPage() {
     setIsLoading(true);
     setError('');
 
-    const result = await registerUser(data);
+    const result = await registerUser({
+      email: data.email,
+      password: data.password,
+      firstName: data.firstName,
+      lastName: data.lastName,
+    });
 
     if (result.success) {
       router.push('/');
@@ -76,15 +87,28 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="firstName">First Name</Label>
               <Input
-                id="username"
+                id="firstName"
                 type="text"
-                placeholder="johndoe"
-                {...register('username')}
+                placeholder="John"
+                {...register('firstName')}
               />
-              {errors.username && (
-                <p className="text-sm text-destructive">{errors.username.message}</p>
+              {errors.firstName && (
+                <p className="text-sm text-destructive">{errors.firstName.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
+                type="text"
+                placeholder="Doe"
+                {...register('lastName')}
+              />
+              {errors.lastName && (
+                <p className="text-sm text-destructive">{errors.lastName.message}</p>
               )}
             </div>
 
@@ -112,6 +136,9 @@ export default function RegisterPage() {
               {errors.password && (
                 <p className="text-sm text-destructive">{errors.password.message}</p>
               )}
+              <p className="text-xs text-muted-foreground">
+                Must be 8+ characters with uppercase, lowercase, number, and special character (@$!%*?&#)
+              </p>
             </div>
 
             <div className="space-y-2">

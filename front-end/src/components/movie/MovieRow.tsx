@@ -30,12 +30,12 @@ export default function MovieRow({ title, movies, showProgress = false }: MovieR
     <div className="space-y-4">
       <h2 className="text-2xl font-bold">{title}</h2>
       
-      <div className="relative group">
+      <div className="relative group/row">
         {/* Scroll Left Button */}
         <Button
           variant="ghost"
           size="icon"
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-black/70"
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover/row:opacity-100 transition-opacity bg-black/50 hover:bg-black/70"
           onClick={() => scroll('left')}
         >
           <ChevronLeft className="h-6 w-6" />
@@ -58,7 +58,7 @@ export default function MovieRow({ title, movies, showProgress = false }: MovieR
         <Button
           variant="ghost"
           size="icon"
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-black/70"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 opacity-0 group-hover/row:opacity-100 transition-opacity bg-black/50 hover:bg-black/70"
           onClick={() => scroll('right')}
         >
           <ChevronRight className="h-6 w-6" />

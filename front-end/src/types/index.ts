@@ -24,9 +24,9 @@ export interface LoginCredentials {
 
 export interface RegisterData {
   email: string;
-  username: string;
+  firstName: string;
+  lastName: string;
   password: string;
-  confirmPassword: string;
 }
 
 // Movie Types
@@ -39,11 +39,11 @@ export interface Movie {
   trailer?: string;
   year: number;
   duration: number; // in minutes
-  genres: string[];
-  tags: string[];
+  genres?: string[];
+  tags?: string[];
   rating: number;
   quality: '480p' | '720p' | '1080p' | '4K';
-  cast: CastMember[];
+  cast?: CastMember[];
   director?: string;
   streamUrl?: string;
   downloadUrl?: string;

@@ -91,10 +91,12 @@ export default function MovieDetailPage() {
                     <Clock className="h-4 w-4" />
                     {currentMovie.duration}m
                   </span>
-                  <span className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    {currentMovie.rating.toFixed(1)}
-                  </span>
+                  {currentMovie.rating != null && (
+                    <span className="flex items-center gap-1">
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      {currentMovie.rating.toFixed(1)}
+                    </span>
+                  )}
                   <span className="px-2 py-1 bg-primary text-primary-foreground text-sm rounded">
                     {currentMovie.quality}
                   </span>
@@ -103,7 +105,7 @@ export default function MovieDetailPage() {
 
               {/* Genres */}
               <div className="flex gap-2 flex-wrap">
-                {currentMovie.genres.map((genre) => (
+                {currentMovie.genres?.map((genre) => (
                   <span key={genre} className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm">
                     {genre}
                   </span>
