@@ -1,0 +1,62 @@
+{
+	"info": {
+		"_postman_id": "a422141b-4754-454d-a612-7e5ea123ede1",
+		"name": "MovieHub-Auth",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "48037414",
+		"_collection_link": "https://kavidubim2gamaethige-5938782.postman.co/workspace/Kavidu-Bimsara's-Workspace~e04c8e77-ce97-4636-8f6b-d33ccdb2e6ec/collection/48037414-a422141b-4754-454d-a612-7e5ea123ede1?action=share&source=collection_link&creator=48037414"
+	},
+	"item": [
+		{
+			"name": "Auth-Reg-email",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"email\": \"test@example.com\",\r\n  \"password\": \"Test123!\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5294/api/auth/register",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5294",
+					"path": [
+						"api",
+						"auth",
+						"register"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Auth-Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5294/api/auth/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5294",
+					"path": [
+						"api",
+						"auth",
+						"health"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
