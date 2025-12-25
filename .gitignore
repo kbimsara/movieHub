@@ -77,6 +77,7 @@ next-env.d.ts
 *.user
 *.userosscache
 *.sln.docstates
+**/Properties/launchSettings.json
 
 # Build results
 [Dd]ebug/
@@ -138,8 +139,8 @@ ServiceFabricBackup/
 # ========================================
 
 # Docker
-.dockerignore
 docker-compose.override.yml
+docker-compose.*.local.yml
 
 # Database
 *.db
@@ -148,18 +149,60 @@ docker-compose.override.yml
 *.PostgreSQL
 pgdata/
 
-# Environment files (DO NOT commit secrets)
+# ========================================
+# Environment Variables & Secrets
+# ========================================
+# CRITICAL: Never commit real secrets to source control
+
+# Environment files (all .env files with real secrets)
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+**/.env.production
+**/.env.staging
+**/.env.development.local
+
+# Keep example/template files (these are safe to commit)
+!**/.env.example
+!**/.env.template
+
+# Specific service environment files
 services/**/.env
 services/**/.env.local
 services/**/.env.production
 services/DB/.env.local
+services/api-gateway/.env
+services/auth-service/**/.env
+services/user-service/**/.env
+services/catalog-service/**/.env
+services/movie-search-service/**/.env
 
-# Configuration files with secrets (if needed, use .example files)
+# .NET User Secrets
+**/secrets.json
+
+# Configuration files with secrets
 **/appsettings.Production.json
 **/appsettings.Secrets.json
-services/**/.env.local
-services/**/.env.production
-services/DB/.env.local
+**/appsettings.Local.json
+
+# Cloud provider credentials
+**/.azure/
+**/.aws/
+**/.gcp/
+
+# Kubernetes secrets
+**/k8s/*secret*.yaml
+**/k8s/*-secrets.yaml
+**/kubernetes/*secret*.yaml
+**/kubernetes/*-secrets.yaml
+
+# Terraform state files (Infrastructure as Code)
+**/*.tfstate
+**/*.tfstate.backup
+**/.terraform/
+**/.terraform.lock.hcl
 
 # ========================================
 # IDEs and Editors
@@ -188,21 +231,14 @@ Desktop.ini
 # ========================================
 # Documentation
 # ========================================
-
-front-end/*.md
-
+# Keep all README files
+!**/README.md
 
 # ========================================
 # .NET Solution Files (Keep .sln and .slnx)
 # ========================================
 # All .sln files should be committed
 # *.sln.slnx should be committed for Visual Studio 2022+
-
-# ========================================
-# README Exclusions
-# ========================================
-# Keep service README files
-!services/**/README.md
 # ========================================
 # Temporary files
 # ========================================

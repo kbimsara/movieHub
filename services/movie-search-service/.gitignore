@@ -1,0 +1,4 @@
+services/movie-search-service/.vs/
+services/movie-search-service/**/bin/
+services/movie-search-service/**/obj/
+services/movie-search-service/**/*.user

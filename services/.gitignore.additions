@@ -1,0 +1,32 @@
+# Environment Variables - DO NOT COMMIT
+# These files contain sensitive configuration and secrets
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Keep example files for templates
+!.env.example
+!.env.template
+
+# User secrets (if using .NET User Secrets)
+**/secrets.json
+
+# Docker environment overrides
+docker-compose.override.yml
+docker-compose.*.yml
+!docker-compose.yml
+
+# Kubernetes secrets
+**/k8s/*secret*.yaml
+**/k8s/*-secrets.yaml
+
+# Azure/AWS credential files
+**/.azure/
+**/.aws/
+
+# Terraform state files (if using IaC)
+**/*.tfstate
+**/*.tfstate.backup
+**/.terraform/
