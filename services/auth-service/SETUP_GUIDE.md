@@ -50,45 +50,58 @@ AuthService.API/              ← Web Entry Point
 
 ## Setup Instructions
 
-### 1. Install PostgreSQL
-- Download from https://www.postgresql.org/download/
-- Or use Docker: `docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres`
-
-### 2. Restore NuGet Packages
+### 1. Start Database
 ```bash
-cd f:\Github\movieHub\services\auth-service
+cd f:\Github\movieHub\services\DB
+docker-compose --env-file .env.local up -d
+```
+
+Verify database is running:
+```bash
+docker ps
+```
+
+### 2. Install EF Core Tools (if not already installed)
+```bash
+dotnet tool install --global dotnet-ef
+```
+
+### 3. Restore NuGet Packages
+```bash
+cd f:\Github\movieHub\services\auth-service\AuthService.API
 dotnet restore
 ```
 
-### 3. Create Database Migration
+### 4. Create Database Migration
 ```bash
-cd f:\Github\movieHub\services\auth-service\AuthService.Infrastructure
+cd ..\AuthService.Infrastructure
 dotnet ef migrations add InitialCreate --startup-project ..\AuthService.API
 dotnet ef database update --startup-project ..\AuthService.API
 ```
 
-### 4. Run the Application
+### 5. Run the Application
 ```bash
 cd ..\AuthService.API
 dotnet run
 ```
 
-The API will start on `https://localhost:5001` and `http://localhost:5000`
+The API will start on `http://localhost:5294` (or check terminal output for actual port)
 
-**Access Swagger UI:** Navigate to `https://localhost:5001/swagger` in your browser
+**Access Swagger UI:** Navigate to `http://localhost:5294/swagger` in your browser
 
-### 5. Test the API
+### 6. Test the API
 
-**Option 1: Using Swagger UI**
-- Open `https://localhost:5001/swagger`
+**Option 1: Using Swagger UI (Recommended)**
+- Open `http://localhost:5294/swagger` in your browser
 - Click on `/api/auth/register` endpoint
 - Click "Try it out"
 - Enter request body and execute
 
-**Option 2: Using curl or HTTP client**
+**Option 2: Using Postman or curl**
 
 **Register a new user:**
-```bashs://localhost:5001/api/auth/login
+```bash
+POST http://localhost:5294/api/auth/register
 Content-Type: application/json
 
 {
@@ -105,21 +118,28 @@ Content-Type: application/json
 }
 ```
 
-**Error Responses:**
-- `409 Conflict` - User already exists (during registration)
-- `401 Unauthorized` - Invalid credentials (during login)
+**Login:**
+```bash
+POST http://localhost:5294/api/auth/login
+Content-Type: application/json
+
+{
   "email": "user@example.com",
   "password": "Test123!"
 }
 ```
 
-**Response:**
+**Successful Response (200 OK):**
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "email": "user@example.com"
 }
 ```
+
+**Error Responses:**
+- `409 Conflict` - User already exists (during registration)
+- `401 Unauthorized` - Invalid credentials (during login)
 
 ## Configuration (appsettings.json)
 
@@ -137,22 +157,21 @@ Content-Type: application/json
 }
 ```
 
-## Architecture Explanation
-
-### Why Each File Belongs in Its Layer:
-
-**Domain Layer (AuthService.Domain)**
-- `User.cs`: Core business entity with no dependencies
-- Contains domain logic like entity creation and validation
-- No references to any framework or infrastructure
-enticationService.cs`: Pure business logic (register, login)
-- `Exceptions/`: Business-specific exceptions (UserAlreadyExistsException, InvalidCredentialsException)
-- `DependencyInjection.cs`: Registers Application service)**
+**Application Layer (AuthService.Application)**
 - `DTOs/`: Data transfer objects for API communication
 - `Interfaces/`: Contracts that Infrastructure must implement
-- `AuthService.cs`: Pure business logic (register, login) with PostgreSQL
+- `AuthenticationService.cs`: Pure business logic (register, login)
+- `Exceptions/`: Business-specific exceptions (UserAlreadyExistsException, InvalidCredentialsException)
+- `DependencyInjection.cs`: Registers Application services
+- NO database, JWT, or BCrypt code here (only interfaces)
+
+**Infrastructure Layer (AuthService.Infrastructure)**
+- `AuthDbContext.cs`: Entity Framework Core database context with PostgreSQL
 - `UserRepository.cs`: PostgreSQL implementation of IUserRepository
 - `JwtTokenGenerator.cs`: JWT token creation using System.IdentityModel.Tokens.Jwt
+- `BCryptPasswordHasher.cs`: Password hashing using BCrypt.Net-Next
+- `JwtSettings.cs`: Configuration model for JWT settings
+- `DependencyInjection.cs`: Registers Infrastructure services (DbContext, repositories, security)tityModel.Tokens.Jwt
 - `BCryptPasswordHasher.cs`: Password hashing using BCrypt.Net-Next
 - `JwtSettings.cs`: Configuration model for JWT settings
 - `DependencyInjection.cs`: Registers Infrastructure services (DbContext, repositories, security)
@@ -180,9 +199,36 @@ enticationService.cs`: Pure business logic (register, login)
 6. **Custom Exceptions**: Better error handling than generic Exception
 7. **DTO for JWT Claims**: Interface doesn't depend on User entity
  to test AuthenticationService
+## Testing Strategy
+
+- **Unit Tests**: Mock IUserRepository, IPasswordHasher, IJwtTokenGenerator to test AuthenticationService
 - **Integration Tests**: Test against real PostgreSQL database with TestContainers
 - **API Tests**: Use WebApplicationFactory for end-to-end tests
 
+## Quick Start (All-in-One)
+
+```bash
+# 1. Start database
+cd f:\Github\movieHub\services\DB
+docker-compose --env-file .env.local up -d
+
+# 2. Install EF tools (first time only)
+dotnet tool install --global dotnet-ef
+
+# 3. Navigate to Infrastructure
+cd ..\auth-service\AuthService.Infrastructure
+
+# 4. Create and apply migration
+dotnet ef migrations add InitialCreate --startup-project ..\AuthService.API
+dotnet ef database update --startup-project ..\AuthService.API
+
+# 5. Run the API
+cd ..\AuthService.API
+dotnet run
+
+# 6. Open Swagger in browser
+# http://localhost:5294/swagger
+```
 ## Endpoints
 
 | Method | Endpoint | Description | Request Body | Success Response |
@@ -194,19 +240,27 @@ enticationService.cs`: Pure business logic (register, login)
 ## Troubleshooting
 
 **Issue: Cannot connect to PostgreSQL**
-- Ensure PostgreSQL is running: `docker ps` or check Windows Services
-- Verify connection string in appsettings.json matches your PostgreSQL setup
+- Ensure "dotnet-ef not found"**
+```bash
+dotnet tool install --global dotnet-ef
+```
+
+- **Database**: PostgreSQL 16-alpine (Docker)
+- **Port**: Configured dynamically (check terminal output)local
 - Check firewall settings for port 5432
+
+**Issue: Port already in use**
+- Check what's running on the port in launchSettings.json
+- Kill the process or change the port in Properties/launchSettings.json
 
 **Issue: Migration fails**
 - Ensure you're in the Infrastructure project directory
-- Use `--startup-project ../AuthService.API` flag
-- Check that connection string is valid
+- Use `--startup-project ..\AuthService.API` flag
+- Verify database is running and connection string is correct
 
 **Issue: JWT token validation fails**
 - Verify JWT Secret, Issuer, and Audience match in appsettings.json
-- Check token expiry time (default: 60 minutes)
-
+- Check token expiry time (Development: 1440 minutes, Production
 ## Docker Deployment
 
 ```bash
