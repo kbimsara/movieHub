@@ -63,4 +63,16 @@ public class AuthenticationService : IAuthService
 
         return new AuthResponseDto(token, user.Email);
     }
+
+    public async Task DeleteUserAsync(string email)
+    {
+        // Find user by email
+        var user = await _userRepository.GetByEmailAsync(email);
+        if (user is null)
+            throw new InvalidCredentialsException();
+
+        // Delete user
+        _userRepository.Delete(user);
+        await _userRepository.SaveChangesAsync();
+    }
 }

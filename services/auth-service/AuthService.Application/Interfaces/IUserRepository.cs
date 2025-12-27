@@ -16,6 +16,11 @@ public interface IUserRepository
     Task AddAsync(Domain.Entities.User user);
 
     /// <summary>
+    /// Deletes a user from the database.
+    /// </summary>
+    void Delete(Domain.Entities.User user);
+
+    /// <summary>
     /// Saves all pending changes to the database.
     /// </summary>
     Task<int> SaveChangesAsync();

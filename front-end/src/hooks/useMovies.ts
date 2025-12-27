@@ -15,7 +15,6 @@ import {
 } from '@/store/slices/movieSlice';
 import { movieService } from '@/services/movie.service';
 import { SearchFilters, PaginationParams } from '@/types';
-import { getMockTrending, getMockPopular, getMockTopRated, mockMovies } from '@/lib/mockData';
 
 export function useMovies() {
   const dispatch = useAppDispatch();
@@ -31,6 +30,7 @@ export function useMovies() {
       dispatch(setLoading(false));
     } catch (error: any) {
       dispatch(setError(error.message));
+      dispatch(setLoading(false));
     }
   };
 
@@ -43,68 +43,67 @@ export function useMovies() {
       }
       dispatch(setLoading(false));
     } catch (error: any) {
-      console.log('Backend not connected. Using mock data for movie details.');
-      // Use mock data when API is not available
-      const mockMovie = mockMovies.find(m => m.id === id);
-      if (mockMovie) {
-        dispatch(setCurrentMovie(mockMovie));
-      }
+      dispatch(setError(error.message));
       dispatch(setLoading(false));
     }
   };
 
-  const fetchTrending = async () => {
-    try {
-      const response = await movieService.getTrendingMovies();
-      if (response.success && response.data) {
-        dispatch(setTrending(response.data));
-      }
-    } catch (error: any) {
-      console.log('Backend not connected. Using mock data for trending movies.');
-      // Use mock data when API is not available
-      dispatch(setTrending(getMockTrending()));
-    }
-  };
+  // NOTE: Backend endpoint not yet implemented - temporarily disabled
+  // const fetchTrending = async () => {
+  //   try {
+  //     dispatch(setLoading(true));
+  //     const response = await movieService.getTrendingMovies();
+  //     if (response.success && response.data) {
+  //       dispatch(setTrending(response.data));
+  //     }
+  //     dispatch(setLoading(false));
+  //   } catch (error: any) {
+  //     dispatch(setError(error.message));
+  //     dispatch(setLoading(false));
+  //   }
+  // };
 
-  const fetchPopular = async () => {
-    try {
-      const response = await movieService.getPopularMovies();
-      if (response.success && response.data) {
-        dispatch(setPopular(response.data));
-      }
-    } catch (error: any) {
-      console.log('Backend not connected. Using mock data for popular movies.');
-      // Use mock data when API is not available
-      dispatch(setPopular(getMockPopular()));
-    }
-  };
+  // NOTE: Backend endpoint not yet implemented - temporarily disabled
+  // const fetchPopular = async () => {
+  //   try {
+  //     dispatch(setLoading(true));
+  //     const response = await movieService.getPopularMovies();
+  //     if (response.success && response.data) {
+  //       dispatch(setPopular(response.data));
+  //     }
+  //     dispatch(setLoading(false));
+  //   } catch (error: any) {
+  //     dispatch(setError(error.message));
+  //     dispatch(setLoading(false));
+  //   }
+  // };
 
-  const fetchTopRated = async () => {
-    try {
-      const response = await movieService.getTopRatedMovies();
-      if (response.success && response.data) {
-        dispatch(setTopRated(response.data));
-      }
-    } catch (error: any) {
-      console.log('Backend not connected. Using mock data for top-rated movies.');
-      // Use mock data when API is not available
-      dispatch(setTopRated(getMockTopRated()));
-    }
-  };
+  // NOTE: Backend endpoint not yet implemented - temporarily disabled
+  // const fetchTopRated = async () => {
+  //   try {
+  //     dispatch(setLoading(true));
+  //     const response = await movieService.getTopRatedMovies();
+  //     if (response.success && response.data) {
+  //       dispatch(setTopRated(response.data));
+  //     }
+  //     dispatch(setLoading(false));
+  //   } catch (error: any) {
+  //     dispatch(setError(error.message));
+  //     dispatch(setLoading(false));
+  //   }
+  // };
 
   const fetchRelatedMovies = async (movieId: string) => {
     try {
+      dispatch(setLoading(true));
       const response = await movieService.getRelatedMovies(movieId);
       if (response.success && response.data) {
         dispatch(setRelatedMovies(response.data));
       }
+      dispatch(setLoading(false));
     } catch (error: any) {
-      console.log('Backend not connected. Using mock data for related movies.');
-      // Use mock data when API is not available - return random movies
-      const currentIndex = mockMovies.findIndex(m => m.id === movieId);
-      const otherMovies = mockMovies.filter(m => m.id !== movieId);
-      const related = otherMovies.slice(0, 6);
-      dispatch(setRelatedMovies(related));
+      dispatch(setError(error.message));
+      dispatch(setLoading(false));
     }
   };
 
@@ -115,7 +114,7 @@ export function useMovies() {
         dispatch(setGenres(response.data));
       }
     } catch (error: any) {
-      console.error('Error fetching genres:', error);
+      dispatch(setError(error.message));
     }
   };
 
@@ -129,6 +128,7 @@ export function useMovies() {
       dispatch(setLoading(false));
     } catch (error: any) {
       dispatch(setError(error.message));
+      dispatch(setLoading(false));
     }
   };
 
@@ -144,9 +144,9 @@ export function useMovies() {
     error: movieState.error,
     fetchMovies,
     fetchMovieById,
-    fetchTrending,
-    fetchPopular,
-    fetchTopRated,
+    // fetchTrending, // Disabled - endpoint not implemented
+    // fetchPopular, // Disabled - endpoint not implemented
+    // fetchTopRated, // Disabled - endpoint not implemented
     fetchRelatedMovies,
     fetchGenres,
     searchMovies,

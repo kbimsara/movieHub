@@ -7,14 +7,14 @@ import MovieRow from '@/components/movie/MovieRow';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function HomePage() {
-  const { trending, popular, topRated, isLoading, fetchTrending, fetchPopular, fetchTopRated } = useMovies();
-  const { continueWatching, fetchContinueWatching } = useLibrary();
+  // NOTE: fetchTrending, fetchPopular, fetchTopRated are disabled (endpoints not implemented)
+  // Using fetchMovies() as fallback to get all movies
+  const { movies, isLoading, fetchMovies } = useMovies();
+  const { library } = useLibrary();
 
   useEffect(() => {
-    fetchTrending();
-    fetchPopular();
-    fetchTopRated();
-    fetchContinueWatching();
+    // Fetch all movies since trending/popular/topRated endpoints don't exist yet
+    fetchMovies();
   }, []);
 
   if (isLoading) {
@@ -28,30 +28,30 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-12">
-      {/* Hero Section */}
-      {trending.length > 0 && (
+      {/* Hero Section - Using first movie from catalog */}
+      {movies.length > 0 && (
         <div className="relative h-96 rounded-lg overflow-hidden">
           <div
             className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${trending[0].backdrop || trending[0].poster})` }}
+            style={{ backgroundImage: `url(${movies[0].backdrop || movies[0].poster})` }}
           >
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
           </div>
           <div className="relative h-full flex items-end p-8">
             <div className="space-y-4 max-w-2xl">
-              <h1 className="text-5xl font-bold">{trending[0].title}</h1>
+              <h1 className="text-5xl font-bold">{movies[0].title}</h1>
               <p className="text-lg text-muted-foreground line-clamp-3">
-                {trending[0].description}
+                {movies[0].description}
               </p>
               <div className="flex gap-4">
                 <a
-                  href={`/movie/${trending[0].id}`}
+                  href={`/movie/${movies[0].id}`}
                   className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors"
                 >
                   Watch Now
                 </a>
                 <a
-                  href={`/movie/${trending[0].id}`}
+                  href={`/movie/${movies[0].id}`}
                   className="px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-semibold hover:bg-secondary/80 transition-colors"
                 >
                   More Info
@@ -62,23 +62,25 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Continue Watching */}
-      {continueWatching.length > 0 && (
+      {/* Continue Watching - Disabled (endpoint not implemented) */}
+      {/* {continueWatching.length > 0 && (
         <MovieRow
           title="Continue Watching"
           movies={continueWatching.map((item) => item.movie)}
           showProgress
         />
+      )} */}
+
+      {/* Library */}
+      {library.length > 0 && (
+        <MovieRow
+          title="My Library"
+          movies={library.map((item) => item.movie)}
+        />
       )}
 
-      {/* Trending */}
-      <MovieRow title="Trending Now" movies={trending} />
-
-      {/* Popular */}
-      <MovieRow title="Popular Movies" movies={popular} />
-
-      {/* Top Rated */}
-      <MovieRow title="Top Rated" movies={topRated} />
+      {/* All Movies - Replacing trending/popular/topRated sections */}
+      <MovieRow title="Available Movies" movies={movies} />
     </div>
   );
 }

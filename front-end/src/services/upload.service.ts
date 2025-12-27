@@ -1,4 +1,4 @@
-import apiClient from '@/lib/axios';
+import apiClient from '@/lib/api';
 import { ApiResponse, MovieMetadata, UploadProgress } from '@/types';
 
 export const uploadService = {
@@ -12,7 +12,7 @@ export const uploadService = {
     formData.append('file', file);
     formData.append('metadata', JSON.stringify(metadata));
 
-    const response = await apiClient.post('/upload', formData, {
+    const response = await apiClient.post('/api/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -29,19 +29,19 @@ export const uploadService = {
 
   // Get upload status
   async getUploadStatus(uploadId: string): Promise<ApiResponse<UploadProgress>> {
-    const response = await apiClient.get(`/upload/${uploadId}/status`);
+    const response = await apiClient.get(`/api/upload/${uploadId}/status`);
     return response.data;
   },
 
   // Cancel upload
   async cancelUpload(uploadId: string): Promise<ApiResponse<null>> {
-    const response = await apiClient.delete(`/upload/${uploadId}`);
+    const response = await apiClient.delete(`/api/upload/${uploadId}`);
     return response.data;
   },
 
   // Get all uploads
   async getUploads(): Promise<ApiResponse<UploadProgress[]>> {
-    const response = await apiClient.get('/upload');
+    const response = await apiClient.get('/api/upload');
     return response.data;
   },
 };

@@ -1,11 +1,5 @@
-import axios from 'axios';
+import apiClient from '@/lib/api';
 import { ApiResponse, Movie, PaginatedResponse, SearchFilters, PaginationParams } from '@/types';
-
-const movieClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_MOVIE_API_URL || 'http://localhost:5003/api/v1',
-  timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
-});
 
 export const movieService = {
   // Get all movies with filters
@@ -14,55 +8,76 @@ export const movieService = {
     pagination?: PaginationParams
   ): Promise<ApiResponse<PaginatedResponse<Movie>>> {
     const params = { ...filters, ...pagination };
-    const response = await movieClient.get('/Movies', { params });
+    const response = await apiClient.get('/api/movies', { params });
     return response.data;
   },
 
   // Get movie by ID
   async getMovieById(id: string): Promise<ApiResponse<Movie>> {
-    const response = await movieClient.get(`/Movies/${id}`);
+    const response = await apiClient.get(`/api/movies/${id}`);
     return response.data;
   },
 
+  // NOTE: These endpoints are not yet implemented in the backend
+  // Temporarily commented out to prevent 404 errors
+  
   // Get trending movies
-  async getTrendingMovies(): Promise<ApiResponse<Movie[]>> {
-    const response = await movieClient.get('/Movies/trending');
-    return response.data;
-  },
+  // async getTrendingMovies(): Promise<ApiResponse<Movie[]>> {
+  //   const response = await apiClient.get('/api/movies/trending');
+  //   return response.data;
+  // },
 
   // Get popular movies
-  async getPopularMovies(): Promise<ApiResponse<Movie[]>> {
-    const response = await movieClient.get('/Movies/popular');
-    return response.data;
-  },
+  // async getPopularMovies(): Promise<ApiResponse<Movie[]>> {
+  //   const response = await apiClient.get('/api/movies/popular');
+  //   return response.data;
+  // },
 
   // Get top rated movies
-  async getTopRatedMovies(): Promise<ApiResponse<Movie[]>> {
-    const response = await movieClient.get('/Movies/top-rated');
-    return response.data;
-  },
+  // async getTopRatedMovies(): Promise<ApiResponse<Movie[]>> {
+  //   const response = await apiClient.get('/api/movies/top-rated');
+  //   return response.data;
+  // },
 
   // Get movies by genre
   async getMoviesByGenre(genre: string): Promise<ApiResponse<Movie[]>> {
-    const response = await movieClient.get(`/movies/genre/${genre}`);
+    const response = await apiClient.get(`/api/movies/genre/${genre}`);
     return response.data;
   },
 
   // Get related movies
   async getRelatedMovies(movieId: string): Promise<ApiResponse<Movie[]>> {
-    const response = await movieClient.get(`/movies/${movieId}/related`);
+    const response = await apiClient.get(`/api/movies/${movieId}/related`);
     return response.data;
   },
 
-  // Search movies
+  // Search movies (legacy - use search service instead)
   async searchMovies(query: string): Promise<ApiResponse<Movie[]>> {
-    const response = await movieClient.get('/movies/search', { params: { q: query } });
+    const response = await apiClient.get('/api/search/movies', { params: { q: query } });
     return response.data;
   },
 
   // Get all genres
   async getGenres(): Promise<ApiResponse<string[]>> {
-    const response = await movieClient.get('/movies/genres');
+    const response = await apiClient.get('/api/movies/genres');
+    return response.data;
+  },
+
+  // Create movie (admin only)
+  async createMovie(movie: Partial<Movie>): Promise<ApiResponse<Movie>> {
+    const response = await apiClient.post('/api/movies', movie);
+    return response.data;
+  },
+
+  // Update movie (admin only)
+  async updateMovie(id: string, movie: Partial<Movie>): Promise<ApiResponse<Movie>> {
+    const response = await apiClient.put(`/api/movies/${id}`, movie);
+    return response.data;
+  },
+
+  // Delete movie (admin only)
+  async deleteMovie(id: string): Promise<ApiResponse<null>> {
+    const response = await apiClient.delete(`/api/movies/${id}`);
     return response.data;
   },
 };
