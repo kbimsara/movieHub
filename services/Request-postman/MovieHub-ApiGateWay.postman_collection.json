@@ -1,0 +1,47 @@
+{
+	"info": {
+		"_postman_id": "8e4e6033-d0a9-4558-835e-4da7eb404f7f",
+		"name": "MovieHub-ApiGateWay",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "48037414",
+		"_collection_link": "https://kavidubim2gamaethige-5938782.postman.co/workspace/Kavidu-Bimsara's-Workspace~e04c8e77-ce97-4636-8f6b-d33ccdb2e6ec/collection/48037414-8e4e6033-d0a9-4558-835e-4da7eb404f7f?action=share&source=collection_link&creator=48037414"
+	},
+	"item": [
+		{
+			"name": "User-reg",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"email\": \"kavidubim2gamaethige@gmail.com\",\r\n  \"password\": \"Asdf@123\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/auth/register"
+			},
+			"response": []
+		},
+		{
+			"name": "User-login",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"email\": \"kavidubim2gamaethige@gmail.com\",\r\n  \"password\": \"Asdf@123\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:5000/api/auth/login"
+			},
+			"response": []
+		}
+	]
+}

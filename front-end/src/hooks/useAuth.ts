@@ -78,6 +78,9 @@ export function useAuth() {
           refreshToken: response.token // Using same token for now
         }));
         
+        // Redirect to home page after successful login
+        router.push('/');
+        
         return { success: true };
       }
       return { success: false, error: 'Login failed' };
@@ -108,6 +111,9 @@ export function useAuth() {
           accessToken: response.token,
           refreshToken: response.token // Using same token for now
         }));
+        
+        // Redirect to home page after successful registration
+        router.push('/');
         
         return { success: true };
       }
