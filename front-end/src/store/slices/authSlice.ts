@@ -1,6 +1,17 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { AuthState, User } from '@/types';
+import { 
+  saveSession, 
+  getSession, 
+  clearSession,
+  updateAccessToken as updateStoredAccessToken,
+  updateRefreshToken as updateStoredRefreshToken,
+  updateUserData,
+  extendSession
+} from '@/utils/session';
 
+// Don't restore session here to avoid hydration mismatch
+// Session will be restored in useAuth hook after mount
 const initialState: AuthState = {
   user: null,
   accessToken: null,
@@ -16,7 +27,7 @@ const authSlice = createSlice({
   reducers: {
     setCredentials: (
       state,
-      action: PayloadAction<{ user: User; accessToken: string; refreshToken: string }>
+      action: PayloadAction<{ user: User; accessToken: string; refreshToken: string; rememberMe?: boolean }>
     ) => {
       state.user = action.payload.user;
       state.accessToken = action.payload.accessToken;
@@ -24,14 +35,36 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       state.error = null;
       
-      // Store in localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('accessToken', action.payload.accessToken);
-        localStorage.setItem('refreshToken', action.payload.refreshToken);
-      }
+      // Save complete session data
+      saveSession(
+        action.payload.user,
+        action.payload.accessToken,
+        action.payload.refreshToken,
+        action.payload.rememberMe ?? true
+      );
     },
     setUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
+      // Update user data in session storage
+      updateUserData(action.payload);
+    },
+    updateTokens: (
+      state,
+      action: PayloadAction<{ accessToken: string; refreshToken?: string }>
+    ) => {
+      state.accessToken = action.payload.accessToken;
+      if (action.payload.refreshToken) {
+        state.refreshToken = action.payload.refreshToken;
+      }
+      
+      // Update tokens in session storage
+      updateStoredAccessToken(action.payload.accessToken);
+      if (action.payload.refreshToken) {
+        updateStoredRefreshToken(action.payload.refreshToken);
+      }
+      
+      // Extend session expiry
+      extendSession();
     },
     logout: (state) => {
       state.user = null;
@@ -40,11 +73,8 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.error = null;
       
-      // Clear localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-      }
+      // Clear all session data
+      clearSession();
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
@@ -56,5 +86,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setCredentials, setUser, logout, setLoading, setError } = authSlice.actions;
+export const { setCredentials, setUser, updateTokens, logout, setLoading, setError } = authSlice.actions;
 export default authSlice.reducer;

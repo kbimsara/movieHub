@@ -3,10 +3,11 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from './redux';
-import { setCredentials, logout as logoutAction, setUser } from '@/store/slices/authSlice';
+import { setCredentials, logout as logoutAction, setUser, updateTokens } from '@/store/slices/authSlice';
 import { clearUserData } from '@/store/slices/userSlice';
 import { authService } from '@/services/auth.service';
 import { LoginCredentials, RegisterData } from '@/types';
+import { getSession, isSessionValid, clearSession } from '@/utils/session';
 
 export function useAuth() {
   const dispatch = useAppDispatch();
@@ -14,31 +15,56 @@ export function useAuth() {
   const auth = useAppSelector((state) => state.auth);
 
   useEffect(() => {
-    // Check if user is already logged in
+    // Restore session from localStorage after mount (client-side only)
+    const restoreSession = () => {
+      const session = getSession();
+      if (session && !auth.user) {
+        // Restore user and tokens to Redux
+        dispatch(setCredentials({
+          user: session.user,
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
+          rememberMe: true
+        }));
+      }
+    };
+
+    restoreSession();
+  }, [dispatch, auth.user]);
+
+  useEffect(() => {
+    // Only validate session if we have a restored user and valid session
+    if (!auth.user || !isSessionValid()) {
+      return;
+    }
+
+    // Check if user data is fresh enough (skip validation if user was just restored)
     const checkAuth = async () => {
-      const accessToken = localStorage.getItem('accessToken');
-      if (accessToken && !auth.user) {
-        try {
-          const response = await authService.getCurrentUser();
-          if (response.success && response.data) {
-            dispatch(setUser(response.data));
-          } else {
-            // Invalid response, clear tokens
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            dispatch(logoutAction());
-          }
-        } catch (error) {
-          // Token expired or invalid, clear it silently
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
+      try {
+        const response = await authService.getCurrentUser();
+        if (response.success && response.data) {
+          // Update user data with fresh info from server
+          dispatch(setUser(response.data));
+        } else {
+          // Invalid response, clear session
+          clearSession();
+          dispatch(logoutAction());
+        }
+      } catch (error) {
+        console.error('Auth validation error:', error);
+        // Only clear session if it's actually an auth error (401/403)
+        // Don't clear on network errors or 404s
+        if ((error as any)?.response?.status === 401 || (error as any)?.response?.status === 403) {
+          clearSession();
           dispatch(logoutAction());
         }
       }
     };
 
-    checkAuth();
-  }, [dispatch, auth.user]);
+    // Add a small delay to avoid calling this immediately after restore
+    const timeoutId = setTimeout(checkAuth, 1000);
+    return () => clearTimeout(timeoutId);
+  }, []); // Only run once on mount after session restoration
 
   // Listen for logout events (from 401 responses in axios interceptor)
   useEffect(() => {
@@ -52,17 +78,13 @@ export function useAuth() {
     return () => window.removeEventListener('auth:logout', handleLogout);
   }, [dispatch, router]);
 
-  const login = async (credentials: LoginCredentials) => {
+  const login = async (credentials: LoginCredentials, rememberMe: boolean = true) => {
     try {
-      // Clear any existing tokens before login
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      // Clear any existing session before login
+      clearSession();
       
       const response = await authService.login(credentials);
       if (response.token && response.email) {
-        // Store token
-        localStorage.setItem('accessToken', response.token);
-        
         // Create user object from email
         const user = {
           id: '', // Backend doesn't return ID yet
@@ -75,7 +97,8 @@ export function useAuth() {
         dispatch(setCredentials({
           user,
           accessToken: response.token,
-          refreshToken: response.token // Using same token for now
+          refreshToken: response.token, // Using same token for now
+          rememberMe
         }));
         
         // Redirect to home page after successful login
@@ -94,9 +117,6 @@ export function useAuth() {
     try {
       const response = await authService.register(data);
       if (response.token && response.email) {
-        // Store token
-        localStorage.setItem('accessToken', response.token);
-        
         // Create user object from email
         const user = {
           id: '', // Backend doesn't return ID yet
@@ -109,7 +129,8 @@ export function useAuth() {
         dispatch(setCredentials({
           user,
           accessToken: response.token,
-          refreshToken: response.token // Using same token for now
+          refreshToken: response.token, // Using same token for now
+          rememberMe: true
         }));
         
         // Redirect to home page after successful registration
