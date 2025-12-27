@@ -8,13 +8,21 @@
 node_modules/
 .pnp
 .pnp.js
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
 
 # testing
 coverage/
+.nyc_output
 
 # next.js
 .next/
 out/
+.turbo
+.swc/
 
 # production
 build/
@@ -28,6 +36,8 @@ dist/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # local env files
 .env*.local
@@ -39,6 +49,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Package manager lock files (uncomment if you want to ignore them)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Temporary folders
+.tmp/
+tmp/
+temp/
 
 # ========================================
 # .NET / C# (Back-end Services)
@@ -141,13 +161,32 @@ ServiceFabricBackup/
 # Docker
 docker-compose.override.yml
 docker-compose.*.local.yml
+.dockerignore.local
 
-# Database
+# Docker volumes and data
+**/pgdata/
+**/postgres-data/
+**/mysql-data/
+**/mongo-data/
+**/elasticsearch-data/
+**/redis-data/
+
+# Database files
 *.db
 *.db-shm
 *.db-wal
+*.sqlite
+*.sqlite3
 *.PostgreSQL
 pgdata/
+*.mdf
+*.ldf
+*.ndf
+
+# Database backups
+*.sql.gz
+*.dump
+*.backup
 
 # ========================================
 # Environment Variables & Secrets
@@ -229,16 +268,48 @@ ehthumbs.db
 Desktop.ini
 
 # ========================================
+# Media & Uploads (Application Data)
+# ========================================
+# Movie files and user uploads
+**/uploads/
+**/media/
+**/movies/
+**/posters/
+**/thumbnails/
+**/Movie/
+**/Library/
+
+# Exclude large media files
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.wmv
+*.flv
+*.webm
+*.m4v
+
+# HLS streaming files (generated)
+*.m3u8
+*.ts
+*.m4s
+
+# ========================================
 # Documentation
 # ========================================
-# Keep all README files
+# Keep all README files and documentation
 !**/README.md
+!**/ARCHITECTURE.md
+!**/IMPLEMENTATION_SUMMARY.md
+!**/SETUP_GUIDE.md
+!**/API_TESTS.md
 
 # ========================================
 # .NET Solution Files (Keep .sln and .slnx)
 # ========================================
 # All .sln files should be committed
 # *.sln.slnx should be committed for Visual Studio 2022+
+
 # ========================================
 # Temporary files
 # ========================================
@@ -247,3 +318,78 @@ Desktop.ini
 *.temp
 *.cache
 *.log
+*.bak
+*.swp
+*.swo
+*~
+
+# ========================================
+# Development Tools
+# ========================================
+
+# Jest
+.jest/
+jest-coverage/
+
+# ESLint
+.eslintcache
+
+# Stylelint
+.stylelintcache
+
+# Prettier
+.prettierignore
+
+# Storybook
+storybook-static/
+
+# ========================================
+# CI/CD
+# ========================================
+
+# GitHub Actions artifacts
+.github/workflows/*.log
+
+# ========================================
+# Monitoring & Logs
+# ========================================
+
+# Application logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory
+lib-cov/
+coverage/
+*.lcov
+.nyc_output/
+
+# ========================================
+# Security & Sensitive Data
+# ========================================
+
+# SSL certificates and keys
+*.key
+*.crt
+*.pem
+*.p12
+*.pfx
+
+# JWT secrets
+jwt.secret
+*.secret
+
+# API keys and tokens
+.apikeys
+apikeys.txt

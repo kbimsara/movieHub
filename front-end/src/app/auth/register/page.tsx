@@ -13,8 +13,6 @@ import { Label } from '@/components/ui/label';
 import { Film } from 'lucide-react';
 
 const registerSchema = z.object({
-  firstName: z.string().min(1, 'First name is required').max(50, 'First name must not exceed 50 characters'),
-  lastName: z.string().min(1, 'Last name is required').max(50, 'Last name must not exceed 50 characters'),
   email: z.string().email('Invalid email address'),
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
@@ -51,8 +49,6 @@ export default function RegisterPage() {
     const result = await registerUser({
       email: data.email,
       password: data.password,
-      firstName: data.firstName,
-      lastName: data.lastName,
     });
 
     if (result.success) {
@@ -86,32 +82,6 @@ export default function RegisterPage() {
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
-              <Input
-                id="firstName"
-                type="text"
-                placeholder="John"
-                {...register('firstName')}
-              />
-              {errors.firstName && (
-                <p className="text-sm text-destructive">{errors.firstName.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input
-                id="lastName"
-                type="text"
-                placeholder="Doe"
-                {...register('lastName')}
-              />
-              {errors.lastName && (
-                <p className="text-sm text-destructive">{errors.lastName.message}</p>
-              )}
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input

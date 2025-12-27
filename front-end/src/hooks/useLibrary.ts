@@ -77,16 +77,17 @@ export function useLibrary() {
     }
   };
 
-  const fetchContinueWatching = async () => {
-    try {
-      const response = await libraryService.getContinueWatching();
-      if (response.success && response.data) {
-        dispatch(setContinueWatching(response.data));
-      }
-    } catch (error: any) {
-      console.error('Error fetching continue watching:', error);
-    }
-  };
+  // NOTE: Backend endpoint not yet implemented - temporarily disabled
+  // const fetchContinueWatching = async () => {
+  //   try {
+  //     const response = await libraryService.getContinueWatching();
+  //     if (response.success && response.data) {
+  //       dispatch(setContinueWatching(response.data));
+  //     }
+  //   } catch (error: any) {
+  //     console.error('Error fetching continue watching:', error);
+  //   }
+  // };
 
   const fetchFavorites = async () => {
     try {
@@ -110,7 +111,7 @@ export function useLibrary() {
     removeFromLibrary,
     toggleFavorite,
     updateProgress,
-    fetchContinueWatching,
+    // fetchContinueWatching, // Disabled - endpoint not implemented
     fetchFavorites,
   };
 }

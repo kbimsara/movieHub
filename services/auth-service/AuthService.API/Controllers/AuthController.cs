@@ -43,6 +43,18 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Delete a user account by email.
+    /// </summary>
+    [HttpDelete("user/{email}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteUser(string email)
+    {
+        await _authService.DeleteUserAsync(email);
+        return NoContent();
+    }
+
+    /// <summary>
     /// Health check endpoint.
     /// </summary>
     [HttpGet("health")]
