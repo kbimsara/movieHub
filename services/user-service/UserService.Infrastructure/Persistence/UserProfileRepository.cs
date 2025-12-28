@@ -45,4 +45,14 @@ public class UserProfileRepository : IUserProfileRepository
         await _context.SaveChangesAsync();
         return userProfile;
     }
+
+    /// <summary>
+    /// Update an existing user profile
+    /// </summary>
+    public async Task<UserProfile> UpdateAsync(UserProfile userProfile)
+    {
+        _context.UserProfiles.Update(userProfile);
+        await _context.SaveChangesAsync();
+        return userProfile;
+    }
 }

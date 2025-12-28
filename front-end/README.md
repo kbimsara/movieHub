@@ -2,6 +2,35 @@
 
 Modern, responsive Next.js application for the MovieHub streaming platform with full microservices backend integration.
 
+## ⚡ Quick Troubleshooting
+
+**Seeing ERR_NAME_NOT_RESOLVED or requests to `user-service:5445`?**
+
+This is a browser cache issue. Fix with these steps:
+
+```bash
+# 1. Stop the dev server (Ctrl+C)
+
+# 2. Clear Next.js cache
+cd front-end
+rm -rf .next   # On Windows: Remove-Item -Recurse -Force .next
+
+# 3. Clear browser cache
+# In Chrome/Edge: Ctrl+Shift+Delete → Clear cached images and files
+
+# 4. Restart dev server
+npm run dev
+
+# 5. Hard refresh browser
+# Windows: Ctrl+F5
+# Mac: Cmd+Shift+R
+```
+
+**All API requests should go to:** `http://localhost:5000/api/*`  
+**Never to:** `https://user-service:5445` or any direct service URLs
+
+---
+
 ## 🚀 Quick Start
 
 ```bash

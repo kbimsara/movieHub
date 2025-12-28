@@ -41,12 +41,13 @@ export default function LoginPage() {
     const result = await login(data, rememberMe);
 
     if (result.success) {
+      // Small delay to ensure localStorage is synced before navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
       router.push('/');
     } else {
       setError(result.error || 'Login failed');
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (

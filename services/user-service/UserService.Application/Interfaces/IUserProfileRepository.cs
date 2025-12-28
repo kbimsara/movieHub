@@ -11,4 +11,5 @@ public interface IUserProfileRepository
     Task<UserProfile?> GetByUserIdAsync(Guid userId);
     Task<UserProfile> CreateAsync(UserProfile userProfile);
     Task<UserProfile?> GetByIdAsync(Guid id);
+    Task<UserProfile> UpdateAsync(UserProfile userProfile);
 }
