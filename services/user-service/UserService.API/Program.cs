@@ -31,7 +31,9 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+// Disable HTTPS redirection so the service works behind HTTP-only reverse proxies (Docker gateway)
+// The gateway terminates traffic on HTTP, so forcing HTTPS here produces 307 redirects to container hostnames
+// which the browser cannot resolve.
 
 // Authentication MUST come before Authorization
 app.UseAuthentication();
