@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user: authUser, isAuthenticated, logout } = useAuth();
+  const { user: authUser, isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const { profile, isLoading, updateProfile, uploadAvatar } = useUser();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -21,6 +21,8 @@ export default function ProfilePage() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [mounted, setMounted] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -30,12 +32,29 @@ export default function ProfilePage() {
     email: '',
   });
 
-  // Redirect if not authenticated
+  // Handle client-side mounting
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/auth/login');
-    }
-  }, [isAuthenticated, router]);
+    setMounted(true);
+  }, []);
+
+  // Redirect if not authenticated (only after mount to allow session restore)
+  useEffect(() => {
+    // Give enough time for session restoration before redirecting
+    if (!mounted) return;
+
+    const checkAuth = () => {
+      setIsCheckingAuth(false);
+      // Don't redirect if still loading auth state
+      if (!authLoading && !isAuthenticated) {
+        console.warn('⚠️ Profile page: Not authenticated, redirecting to login');
+        router.push('/auth/login');
+      }
+    };
+
+    // Wait a bit longer to ensure session restoration completes
+    const timeoutId = setTimeout(checkAuth, 800);
+    return () => clearTimeout(timeoutId);
+  }, [mounted, isAuthenticated, authLoading, router]);
 
   // Initialize form data when profile loads
   useEffect(() => {
@@ -131,6 +150,19 @@ export default function ProfilePage() {
     setError('');
   };
 
+  // Show noth || isCheckingAuththentication
+  if (!isAuthenticated && isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[60vh]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show nothing while redirecting to login (user not authenticated after loading)
   if (!isAuthenticated) {
     return null;
   }
