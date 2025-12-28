@@ -19,6 +19,7 @@ export function useAuth() {
     const restoreSession = () => {
       const session = getSession();
       if (session && !auth.user) {
+        console.log('🔄 Restoring session from localStorage');
         // Restore user and tokens to Redux
         dispatch(setCredentials({
           user: session.user,
@@ -33,38 +34,46 @@ export function useAuth() {
   }, [dispatch, auth.user]);
 
   useEffect(() => {
-    // Only validate session if we have a restored user and valid session
-    if (!auth.user || !isSessionValid()) {
+    // Only validate session if we have an authenticated user
+    if (!auth.isAuthenticated || !auth.user) {
       return;
     }
 
-    // Check if user data is fresh enough (skip validation if user was just restored)
+    // Skip validation if session is not valid
+    if (!isSessionValid()) {
+      console.warn('⚠️ Session expired, logging out');
+      clearSession();
+      dispatch(logoutAction());
+      return;
+    }
+
+    // NOTE: Backend validation is disabled because /api/auth/me endpoint
+    // returns 401 even with valid tokens. The session is trusted based on
+    // localStorage data until this endpoint is fixed on the backend.
+    // 
+    // When the backend /api/auth/me endpoint is fixed, uncomment this code:
+    /*
     const checkAuth = async () => {
       try {
+        console.log('🔍 Validating session with backend');
         const response = await authService.getCurrentUser();
         if (response.success && response.data) {
-          // Update user data with fresh info from server
+          console.log('✅ Session validated successfully');
           dispatch(setUser(response.data));
-        } else {
-          // Invalid response, clear session
-          clearSession();
-          dispatch(logoutAction());
         }
       } catch (error) {
-        console.error('Auth validation error:', error);
-        // Only clear session if it's actually an auth error (401/403)
-        // Don't clear on network errors or 404s
-        if ((error as any)?.response?.status === 401 || (error as any)?.response?.status === 403) {
+        console.error('❌ Auth validation error:', error);
+        const status = (error as any)?.response?.status;
+        if (status === 401 || status === 403) {
           clearSession();
           dispatch(logoutAction());
         }
       }
     };
-
-    // Add a small delay to avoid calling this immediately after restore
-    const timeoutId = setTimeout(checkAuth, 1000);
+    const timeoutId = setTimeout(checkAuth, 2000);
     return () => clearTimeout(timeoutId);
-  }, []); // Only run once on mount after session restoration
+    */
+  }, [auth.isAuthenticated, auth.user, dispatch]);
 
   // Listen for logout events (from 401 responses in axios interceptor)
   useEffect(() => {
@@ -101,8 +110,8 @@ export function useAuth() {
           rememberMe
         }));
         
-        // Redirect to home page after successful login
-        router.push('/');
+        // Don't navigate here - let the calling component handle navigation
+        // This prevents race conditions with token storage
         
         return { success: true };
       }
