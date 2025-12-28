@@ -9,4 +9,5 @@ public interface IUserProfileService
 {
     Task<UserProfileResponseDto?> GetUserProfileAsync(Guid userId);
     Task<UserProfileResponseDto> CreateUserProfileAsync(Guid userId, string email, string displayName);
+    Task<UserProfileResponseDto?> UpdateUserProfileAsync(Guid userId, UpdateUserProfileRequestDto request);
 }

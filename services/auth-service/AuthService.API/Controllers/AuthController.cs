@@ -1,5 +1,6 @@
 ﻿using AuthService.Application.DTOs;
 using AuthService.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AuthService.API.Controllers;
@@ -40,6 +41,40 @@ public class AuthController : ControllerBase
     {
         var result = await _authService.LoginAsync(request);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Get current authenticated user details from JWT token.
+    /// </summary>
+    [HttpGet("me")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public IActionResult GetCurrentUser()
+    {
+        // Extract user info from JWT claims
+        var userId = User.FindFirst("sub")?.Value ?? User.FindFirst("userId")?.Value;
+        var email = User.FindFirst("email")?.Value;
+        var username = User.FindFirst("username")?.Value;
+        var role = User.FindFirst("role")?.Value ?? "user";
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { success = false, error = "Invalid or missing token" });
+        }
+
+        return Ok(new
+        {
+            success = true,
+            data = new
+            {
+                id = userId,
+                email = email,
+                username = username,
+                role = role,
+                authenticated = true
+            }
+        });
     }
 
     /// <summary>

@@ -70,4 +70,33 @@ public class UserProfileService : IUserProfileService
             CreatedAt = created.CreatedAt
         };
     }
+
+    /// <summary>
+    /// Update an existing user profile
+    /// </summary>
+    public async Task<UserProfileResponseDto?> UpdateUserProfileAsync(Guid userId, UpdateUserProfileRequestDto request)
+    {
+        var userProfile = await _repository.GetByUserIdAsync(userId);
+        
+        if (userProfile == null)
+            return null;
+
+        // Update fields if provided
+        if (!string.IsNullOrEmpty(request.Username))
+            userProfile.DisplayName = request.Username;
+        
+        if (!string.IsNullOrEmpty(request.Email))
+            userProfile.Email = request.Email;
+
+        var updated = await _repository.UpdateAsync(userProfile);
+
+        return new UserProfileResponseDto
+        {
+            Id = updated.Id,
+            UserId = updated.UserId,
+            Email = updated.Email,
+            DisplayName = updated.DisplayName,
+            CreatedAt = updated.CreatedAt
+        };
+    }
 }

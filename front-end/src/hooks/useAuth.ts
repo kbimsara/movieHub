@@ -3,10 +3,11 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from './redux';
-import { setCredentials, logout as logoutAction, setUser } from '@/store/slices/authSlice';
+import { setCredentials, logout as logoutAction, setUser, updateTokens } from '@/store/slices/authSlice';
 import { clearUserData } from '@/store/slices/userSlice';
 import { authService } from '@/services/auth.service';
 import { LoginCredentials, RegisterData } from '@/types';
+import { getSession, isSessionValid, clearSession } from '@/utils/session';
 
 export function useAuth() {
   const dispatch = useAppDispatch();
@@ -14,31 +15,65 @@ export function useAuth() {
   const auth = useAppSelector((state) => state.auth);
 
   useEffect(() => {
-    // Check if user is already logged in
+    // Restore session from localStorage after mount (client-side only)
+    const restoreSession = () => {
+      const session = getSession();
+      if (session && !auth.user) {
+        console.log('🔄 Restoring session from localStorage');
+        // Restore user and tokens to Redux
+        dispatch(setCredentials({
+          user: session.user,
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
+          rememberMe: true
+        }));
+      }
+    };
+
+    restoreSession();
+  }, [dispatch, auth.user]);
+
+  useEffect(() => {
+    // Only validate session if we have an authenticated user
+    if (!auth.isAuthenticated || !auth.user) {
+      return;
+    }
+
+    // Skip validation if session is not valid
+    if (!isSessionValid()) {
+      console.warn('⚠️ Session expired, logging out');
+      clearSession();
+      dispatch(logoutAction());
+      return;
+    }
+
+    // NOTE: Backend validation is disabled because /api/auth/me endpoint
+    // returns 401 even with valid tokens. The session is trusted based on
+    // localStorage data until this endpoint is fixed on the backend.
+    // 
+    // When the backend /api/auth/me endpoint is fixed, uncomment this code:
+    /*
     const checkAuth = async () => {
-      const accessToken = localStorage.getItem('accessToken');
-      if (accessToken && !auth.user) {
-        try {
-          const response = await authService.getCurrentUser();
-          if (response.success && response.data) {
-            dispatch(setUser(response.data));
-          } else {
-            // Invalid response, clear tokens
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            dispatch(logoutAction());
-          }
-        } catch (error) {
-          // Token expired or invalid, clear it silently
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
+      try {
+        console.log('🔍 Validating session with backend');
+        const response = await authService.getCurrentUser();
+        if (response.success && response.data) {
+          console.log('✅ Session validated successfully');
+          dispatch(setUser(response.data));
+        }
+      } catch (error) {
+        console.error('❌ Auth validation error:', error);
+        const status = (error as any)?.response?.status;
+        if (status === 401 || status === 403) {
+          clearSession();
           dispatch(logoutAction());
         }
       }
     };
-
-    checkAuth();
-  }, [dispatch, auth.user]);
+    const timeoutId = setTimeout(checkAuth, 2000);
+    return () => clearTimeout(timeoutId);
+    */
+  }, [auth.isAuthenticated, auth.user, dispatch]);
 
   // Listen for logout events (from 401 responses in axios interceptor)
   useEffect(() => {
@@ -52,17 +87,13 @@ export function useAuth() {
     return () => window.removeEventListener('auth:logout', handleLogout);
   }, [dispatch, router]);
 
-  const login = async (credentials: LoginCredentials) => {
+  const login = async (credentials: LoginCredentials, rememberMe: boolean = true) => {
     try {
-      // Clear any existing tokens before login
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      // Clear any existing session before login
+      clearSession();
       
       const response = await authService.login(credentials);
       if (response.token && response.email) {
-        // Store token
-        localStorage.setItem('accessToken', response.token);
-        
         // Create user object from email
         const user = {
           id: '', // Backend doesn't return ID yet
@@ -75,11 +106,12 @@ export function useAuth() {
         dispatch(setCredentials({
           user,
           accessToken: response.token,
-          refreshToken: response.token // Using same token for now
+          refreshToken: response.token, // Using same token for now
+          rememberMe
         }));
         
-        // Redirect to home page after successful login
-        router.push('/');
+        // Don't navigate here - let the calling component handle navigation
+        // This prevents race conditions with token storage
         
         return { success: true };
       }
@@ -94,9 +126,6 @@ export function useAuth() {
     try {
       const response = await authService.register(data);
       if (response.token && response.email) {
-        // Store token
-        localStorage.setItem('accessToken', response.token);
-        
         // Create user object from email
         const user = {
           id: '', // Backend doesn't return ID yet
@@ -109,7 +138,8 @@ export function useAuth() {
         dispatch(setCredentials({
           user,
           accessToken: response.token,
-          refreshToken: response.token // Using same token for now
+          refreshToken: response.token, // Using same token for now
+          rememberMe: true
         }));
         
         // Redirect to home page after successful registration

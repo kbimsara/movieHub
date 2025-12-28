@@ -16,8 +16,13 @@ import { libraryService } from '@/services/library.service';
 export function useLibrary() {
   const dispatch = useAppDispatch();
   const libraryState = useAppSelector((state) => state.library);
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
   const fetchLibrary = async () => {
+    // Don't fetch library if user is not authenticated
+    if (!isAuthenticated) {
+      return;
+    }
     try {
       dispatch(setLoading(true));
       const response = await libraryService.getLibrary();

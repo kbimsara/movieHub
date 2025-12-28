@@ -24,6 +24,7 @@ export default function LoginPage() {
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
 
   const {
     register,
@@ -37,15 +38,16 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
 
-    const result = await login(data);
+    const result = await login(data, rememberMe);
 
     if (result.success) {
+      // Small delay to ensure localStorage is synced before navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
       router.push('/');
     } else {
       setError(result.error || 'Login failed');
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (
@@ -97,8 +99,13 @@ export default function LoginPage() {
             </div>
 
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" className="rounded border-gray-300" />
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="rounded border-gray-300 cursor-pointer"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
                 Remember me
               </label>
               <Link

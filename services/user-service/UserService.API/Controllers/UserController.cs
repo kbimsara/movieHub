@@ -91,4 +91,32 @@ public class UserController : ControllerBase
             return Conflict(new { message = ex.Message });
         }
     }
+
+    /// <summary>
+    /// Update current user's profile
+    /// Reads UserId from JWT token claims
+    /// </summary>
+    /// <param name="request">Fields to update</param>
+    /// <returns>Updated user profile</returns>
+    [HttpPut("me")]
+    public async Task<ActionResult<UserProfileResponseDto>> UpdateMyProfile(
+        [FromBody] UpdateUserProfileRequestDto request)
+    {
+        // Extract UserId from JWT token (sub claim)
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized(new { message = "Invalid token: User ID not found" });
+        }
+
+        var profile = await _userProfileService.UpdateUserProfileAsync(userId, request);
+        
+        if (profile == null)
+        {
+            return NotFound(new { message = "User profile not found" });
+        }
+
+        return Ok(profile);
+    }
 }
