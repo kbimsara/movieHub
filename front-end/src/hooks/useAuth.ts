@@ -19,7 +19,7 @@ export function useAuth() {
     const restoreSession = () => {
       const session = getSession();
       if (session && !auth.user) {
-        console.log('🔄 Restoring session from localStorage');
+        console.log('ðŸ”„ Restoring session from localStorage');
         // Restore user and tokens to Redux
         dispatch(setCredentials({
           user: session.user,
@@ -41,11 +41,12 @@ export function useAuth() {
 
     // Skip validation if session is not valid
     if (!isSessionValid()) {
-      console.warn('⚠️ Session expired, logging out');
+      console.warn('âš ï¸ Session expired, logging out');
       clearSession();
       dispatch(logoutAction());
       return;
     }
+
 
     // NOTE: Backend validation is disabled because /api/auth/me endpoint
     // returns 401 even with valid tokens. The session is trusted based on

@@ -30,6 +30,7 @@ public static class AuthenticationExtensions
         })
         .AddJwtBearer(options =>
         {
+            options.MapInboundClaims = false;
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,

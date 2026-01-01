@@ -75,4 +75,10 @@ public class AuthenticationService : IAuthService
         _userRepository.Delete(user);
         await _userRepository.SaveChangesAsync();
     }
+    public async Task<AuthResponseDto> RefreshTokenAsync(string userId, string email)
+    {
+        var claims = new TokenClaimsDto(Guid.Parse(userId), email);
+        var token = _tokenGenerator.GenerateToken(claims);
+        return new AuthResponseDto(token, email);
+    }
 }

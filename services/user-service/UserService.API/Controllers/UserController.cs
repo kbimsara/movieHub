@@ -119,4 +119,27 @@ public class UserController : ControllerBase
 
         return Ok(profile);
     }
+    [HttpGet("me/history")]
+    public IActionResult GetHistory()
+    {
+        return Ok(new object[] { });
+    }
+
+    [HttpGet("me/library")]
+    public IActionResult GetLibrary()
+    {
+        return Ok(new object[] { });
+    }
+
+    [HttpGet("me/watch-later")]
+    public IActionResult GetWatchLater()
+    {
+        return Ok(new object[] { });
+    }
+
+    [HttpGet("me/favorites")]
+    public IActionResult GetFavorites()
+    {
+        return Ok(new object[] { });
+    }
 }

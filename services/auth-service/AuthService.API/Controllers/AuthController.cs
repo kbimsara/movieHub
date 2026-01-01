@@ -1,4 +1,4 @@
-﻿using AuthService.Application.DTOs;
+using AuthService.Application.DTOs;
 using AuthService.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -96,6 +96,26 @@ public class AuthController : ControllerBase
     public IActionResult Health()
     {
         return Ok(new { status = "healthy", service = "AuthService", version = "1.0" });
+    }
+
+    [HttpPost("refresh")]
+    [Authorize]
+    public async Task<IActionResult> RefreshToken()
+    {
+        var userId = User.FindFirst("sub")?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { success = false, error = "Invalid token" });
+        }
+
+        var email = User.FindFirst("email")?.Value;
+        if (string.IsNullOrEmpty(email))
+        {
+            return Unauthorized(new { success = false, error = "Invalid token" });
+        }
+
+        var result = await _authService.RefreshTokenAsync(userId, email);
+        return Ok(result);
     }
 }
 
