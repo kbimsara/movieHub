@@ -33,17 +33,16 @@ const authSlice = createSlice({
       state.accessToken = action.payload.accessToken;
       state.refreshToken = action.payload.refreshToken;
       state.isAuthenticated = true;
-      state.error = null;
-      
-      // Save complete session data
-      saveSession(
-        action.payload.user,
-        action.payload.accessToken,
-        action.payload.refreshToken,
-        action.payload.rememberMe ?? true
-      );
-    },
-    setUser: (state, action: PayloadAction<User>) => {
+                  state.error = null;
+            
+                  // Save complete session data
+                  saveSession(
+                    action.payload.user,
+                    action.payload.accessToken,
+                    action.payload.refreshToken,
+                    action.payload.rememberMe ?? true
+                  );
+                },    setUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
       // Update user data in session storage
       updateUserData(action.payload);

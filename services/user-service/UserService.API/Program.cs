@@ -1,6 +1,10 @@
+using System.IdentityModel.Tokens.Jwt;
 using UserService.API.Extensions;
 using UserService.Application;
 using UserService.Infrastructure;
+
+// Clearing the default claim type map to prevent claim renaming (e.g. "sub" to "nameidentifier")
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 var builder = WebApplication.CreateBuilder(args);
 

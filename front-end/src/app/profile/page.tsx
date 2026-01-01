@@ -22,7 +22,6 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [mounted, setMounted] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -42,18 +41,15 @@ export default function ProfilePage() {
     // Give enough time for session restoration before redirecting
     if (!mounted) return;
 
-    const checkAuth = () => {
-      setIsCheckingAuth(false);
-      // Don't redirect if still loading auth state
+    const timeoutId = setTimeout(() => {
+      // Only redirect if authentication is not loading AND user is not authenticated
       if (!authLoading && !isAuthenticated) {
         console.warn('⚠️ Profile page: Not authenticated, redirecting to login');
         router.push('/auth/login');
       }
-    };
+    }, 800); // Original timeout was 800ms
 
-    // Wait a bit longer to ensure session restoration completes
-    const timeoutId = setTimeout(checkAuth, 800);
-    return () => clearTimeout(timeoutId);
+    return () => clearTimeout(timeoutId); // Cleanup timeout
   }, [mounted, isAuthenticated, authLoading, router]);
 
   // Initialize form data when profile loads
@@ -150,7 +146,6 @@ export default function ProfilePage() {
     setError('');
   };
 
-  // Show noth || isCheckingAuththentication
   if (!isAuthenticated && isLoading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[60vh]">

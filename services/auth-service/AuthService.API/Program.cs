@@ -4,6 +4,10 @@ using AuthService.Application;
 using AuthService.Infrastructure;
 using AuthService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.IdentityModel.Tokens.Jwt;
+
+// Clearing the default claim type map to prevent claim renaming (e.g. "sub" to "nameidentifier")
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 var builder = WebApplication.CreateBuilder(args);
 
