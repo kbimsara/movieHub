@@ -1,3 +1,4 @@
+using AuthService.API.Data;
 using AuthService.API.DTOs;
 using AuthService.API.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -10,11 +11,13 @@ namespace AuthService.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly AuthDbContext _context;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService, ILogger<AuthController> logger)
+    public AuthController(IAuthService authService, AuthDbContext context, ILogger<AuthController> logger)
     {
         _authService = authService;
+        _context = context;
         _logger = logger;
     }
 
@@ -136,5 +139,45 @@ public class AuthController : ControllerBase
             email,
             username
         });
+    }
+
+    /// <summary>
+    /// Get current user information
+    /// </summary>
+    [HttpGet("me")]
+    [Authorize]
+    [ProducesResponseType(typeof(UserInfo), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetCurrentUser()
+    {
+        try
+        {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+                             ?? User.FindFirst("sub")?.Value;
+            
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(new { error = "Invalid token" });
+            }
+
+            // Get user from database
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return Unauthorized(new { error = "User not found" });
+            }
+
+            return Ok(new UserInfo
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting current user");
+            return StatusCode(500, new { error = "An error occurred while retrieving user information" });
+        }
     }
 }
