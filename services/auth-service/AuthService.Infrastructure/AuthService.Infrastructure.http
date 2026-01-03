@@ -1,6 +1,0 @@
-@AuthService.Infrastructure_HostAddress = http://localhost:5189
-
-GET {{AuthService.Infrastructure_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
