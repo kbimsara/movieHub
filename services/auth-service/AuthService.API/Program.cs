@@ -1,57 +1,160 @@
-﻿using AuthService.API.Extensions;
-using AuthService.API.Middlewares;
-using AuthService.Application;
-using AuthService.Infrastructure;
-using AuthService.Infrastructure.Persistence;
+﻿using System.Text;
+using AuthService.API.Data;
+using AuthService.API.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using System.IdentityModel.Tokens.Jwt;
-
-// Clearing the default claim type map to prevent claim renaming (e.g. "sub" to "nameidentifier")
-JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
+// Load environment variables from .env file
+var root = Directory.GetCurrentDirectory();
+var dotenv = Path.Combine(root, ".env");
+if (File.Exists(dotenv))
+{
+    DotNetEnv.Env.Load(dotenv);
+}
+
+// Configure services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// Add Swagger with JWT support
-builder.Services.AddSwagger();
+// Configure Swagger with JWT support
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "MovieHub Auth Service API",
+        Version = "v1",
+        Description = "Authentication and authorization service for MovieHub application"
+    });
 
-// Add JWT Authentication
-builder.Services.AddJwtAuthentication(builder.Configuration);
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
 
-// Register Application & Infrastructure layers
-builder.Services.AddApplication();
-builder.Services.AddInfrastructure(builder.Configuration);
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+// Configure Database
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+    ?? throw new InvalidOperationException("Database connection string not configured");
+
+builder.Services.AddDbContext<AuthDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+// Configure JWT Authentication
+var jwtSecret = builder.Configuration["Jwt:Secret"]
+    ?? Environment.GetEnvironmentVariable("Jwt__Secret")
+    ?? throw new InvalidOperationException("JWT Secret not configured");
+
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "MovieHub.AuthService";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "MovieHub.Client";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+        ValidateIssuer = true,
+        ValidIssuer = jwtIssuer,
+        ValidateAudience = true,
+        ValidAudience = jwtAudience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.FromMinutes(5)
+    };
+});
+
+builder.Services.AddAuthorization();
+
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+// Register application services
+builder.Services.AddScoped<IAuthService, AuthenticationService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
 
 var app = builder.Build();
 
-// Apply migrations on startup
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
-    dbContext.Database.Migrate();
-}
-
 // Configure middleware pipeline
-app.UseMiddleware<ExceptionMiddleware>();
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "MovieHub Auth Service API v1");
+        c.RoutePrefix = "swagger";
+    });
 }
 
-// Only use HTTPS redirection when not in Docker (when HTTPS is configured)
-if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_URLS")) && 
-    Environment.GetEnvironmentVariable("ASPNETCORE_URLS")?.Contains("https") == true)
-{
-    app.UseHttpsRedirection();
-}
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGet("/", () => new
+{
+    service = "MovieHub Auth Service",
+    version = "1.0.0",
+    status = "running",
+    endpoints = new
+    {
+        health = "/health",
+        swagger = "/swagger",
+        api = "/api/auth"
+    }
+});
+
 app.MapControllers();
+
+// Auto-migrate database on startup
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AuthDbContext>();
+        context.Database.Migrate();
+        app.Logger.LogInformation("Database migration completed successfully");
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "An error occurred while migrating the database");
+    }
+}
 
 app.Run();
