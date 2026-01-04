@@ -19,22 +19,28 @@ export const authService = {
   },
 
   // Logout
-  async logout(): Promise<ApiResponse<null>> {
-    const response = await apiClient.post('/api/auth/logout');
+  async logout(refreshToken: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await apiClient.post('/api/auth/logout', { refreshToken });
     return response.data;
   },
 
-  // Forgot password
-  async forgotPassword(email: string): Promise<ApiResponse<null>> {
-    const response = await apiClient.post('/api/auth/forgot-password', { email });
+  // Validate token
+  async validateToken(): Promise<ApiResponse<{ valid: boolean; userId: string; email: string; username: string }>> {
+    const response = await apiClient.get('/api/auth/validate');
     return response.data;
   },
 
-  // Reset password
-  async resetPassword(token: string, password: string): Promise<ApiResponse<null>> {
-    const response = await apiClient.post('/api/auth/reset-password', { token, password });
-    return response.data;
-  },
+  // Forgot password (not yet implemented in backend)
+  // async forgotPassword(email: string): Promise<ApiResponse<null>> {
+  //   const response = await apiClient.post('/api/auth/forgot-password', { email });
+  //   return response.data;
+  // },
+
+  // Reset password (not yet implemented in backend)
+  // async resetPassword(token: string, password: string): Promise<ApiResponse<null>> {
+  //   const response = await apiClient.post('/api/auth/reset-password', { token, password });
+  //   return response.data;
+  // },
 
   // Get current user
   async getCurrentUser(): Promise<ApiResponse<User>> {

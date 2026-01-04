@@ -18,50 +18,44 @@ export const movieService = {
     return response.data;
   },
 
-  // NOTE: These endpoints are not yet implemented in the backend
-  // Temporarily commented out to prevent 404 errors
-  
-  // Get trending movies
-  // async getTrendingMovies(): Promise<ApiResponse<Movie[]>> {
-  //   const response = await apiClient.get('/api/movies/trending');
-  //   return response.data;
-  // },
-
-  // Get popular movies
-  // async getPopularMovies(): Promise<ApiResponse<Movie[]>> {
-  //   const response = await apiClient.get('/api/movies/popular');
-  //   return response.data;
-  // },
-
-  // Get top rated movies
-  // async getTopRatedMovies(): Promise<ApiResponse<Movie[]>> {
-  //   const response = await apiClient.get('/api/movies/top-rated');
-  //   return response.data;
-  // },
-
-  // Get movies by genre
-  async getMoviesByGenre(genre: string): Promise<ApiResponse<Movie[]>> {
-    const response = await apiClient.get(`/api/movies/genre/${genre}`);
-    return response.data;
-  },
-
-  // Get related movies
-  async getRelatedMovies(movieId: string): Promise<ApiResponse<Movie[]>> {
-    const response = await apiClient.get(`/api/movies/${movieId}/related`);
-    return response.data;
-  },
-
-  // Search movies (legacy - use search service instead)
+  // Search movies (use search service for advanced search)
   async searchMovies(query: string): Promise<ApiResponse<Movie[]>> {
     const response = await apiClient.get('/api/search/movies', { params: { q: query } });
     return response.data;
   },
 
-  // Get all genres
-  async getGenres(): Promise<ApiResponse<string[]>> {
-    const response = await apiClient.get('/api/movies/genres');
-    return response.data;
-  },
+  // NOTE: Additional endpoints not yet implemented in catalog service.
+  // Uncomment when backend endpoints are available:
+  
+  // async getTrendingMovies(): Promise<ApiResponse<Movie[]>> {
+  //   const response = await apiClient.get('/api/movies/trending');
+  //   return response.data;
+  // },
+  
+  // async getPopularMovies(): Promise<ApiResponse<Movie[]>> {
+  //   const response = await apiClient.get('/api/movies/popular');
+  //   return response.data;
+  // },
+  
+  // async getTopRatedMovies(): Promise<ApiResponse<Movie[]>> {
+  //   const response = await apiClient.get('/api/movies/top-rated');
+  //   return response.data;
+  // },
+  
+  // async getMoviesByGenre(genre: string): Promise<ApiResponse<Movie[]>> {
+  //   const response = await apiClient.get(`/api/movies/genre/${genre}`);
+  //   return response.data;
+  // },
+  
+  // async getRelatedMovies(movieId: string): Promise<ApiResponse<Movie[]>> {
+  //   const response = await apiClient.get(`/api/movies/${movieId}/related`);
+  //   return response.data;
+  // },
+  
+  // async getGenres(): Promise<ApiResponse<string[]>> {
+  //   const response = await apiClient.get('/api/movies/genres');
+  //   return response.data;
+  // },
 
   // Create movie (admin only)
   async createMovie(movie: Partial<Movie>): Promise<ApiResponse<Movie>> {
