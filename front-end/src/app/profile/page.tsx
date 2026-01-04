@@ -41,15 +41,20 @@ export default function ProfilePage() {
     // Give enough time for session restoration before redirecting
     if (!mounted) return;
 
-    const timeoutId = setTimeout(() => {
-      // Only redirect if authentication is not loading AND user is not authenticated
-      if (!authLoading && !isAuthenticated) {
-        console.warn('⚠️ Profile page: Not authenticated, redirecting to login');
-        router.push('/auth/login');
-      }
-    }, 800); // Original timeout was 800ms
+    // Wait for auth state to stabilize before checking
+    // Don't redirect while auth is loading (session is being restored)
+    if (authLoading) {
+      console.log('🔄 Auth is loading, waiting for session restoration...');
+      return;
+    }
 
-    return () => clearTimeout(timeoutId); // Cleanup timeout
+    // Once auth has finished loading, check authentication status
+    if (!isAuthenticated) {
+      console.warn('⚠️ Profile page: Not authenticated, redirecting to login');
+      router.push('/auth/login');
+    } else {
+      console.log('✅ User is authenticated, profile page access granted');
+    }
   }, [mounted, isAuthenticated, authLoading, router]);
 
   // Initialize form data when profile loads
@@ -146,7 +151,8 @@ export default function ProfilePage() {
     setError('');
   };
 
-  if (!isAuthenticated && isLoading) {
+  // Show loading state while checking authentication
+  if (authLoading) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[60vh]">
         <div className="text-center">

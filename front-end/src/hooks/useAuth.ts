@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from './redux';
-import { setCredentials, logout as logoutAction, setUser, updateTokens } from '@/store/slices/authSlice';
+import { setCredentials, logout as logoutAction, setUser, updateTokens, setLoading } from '@/store/slices/authSlice';
 import { clearUserData } from '@/store/slices/userSlice';
 import { authService } from '@/services/auth.service';
 import { LoginCredentials, RegisterData } from '@/types';
@@ -27,6 +27,9 @@ export function useAuth() {
           refreshToken: session.refreshToken,
           rememberMe: true
         }));
+      } else if (!session && !auth.user) {
+        // No session found, ensure loading is set to false
+        dispatch(setLoading(false));
       }
     };
 
@@ -76,7 +79,10 @@ export function useAuth() {
     */
   }, [auth.isAuthenticated, auth.user, dispatch]);
 
-  // Listen for logout events (from 401 responses in axios interceptor)
+  // DISABLED: Automatic logout redirect removed
+  // Users now stay logged in even if some API endpoints return 401
+  // They can manually logout using the logout button
+  /*
   useEffect(() => {
     const handleLogout = () => {
       dispatch(logoutAction());
@@ -87,6 +93,7 @@ export function useAuth() {
     window.addEventListener('auth:logout', handleLogout);
     return () => window.removeEventListener('auth:logout', handleLogout);
   }, [dispatch, router]);
+  */
 
   const login = async (credentials: LoginCredentials, rememberMe: boolean = true) => {
     try {
@@ -94,20 +101,20 @@ export function useAuth() {
       clearSession();
       
       const response = await authService.login(credentials);
-      if (response.token && response.email) {
-        // Create user object from email
+      if (response.accessToken && response.user) {
+        // Use the user data from response
         const user = {
-          id: '', // Backend doesn't return ID yet
-          email: response.email,
-          username: response.email.split('@')[0],
+          id: response.user.id,
+          email: response.user.email,
+          username: response.user.username,
           role: 'user' as const,
           createdAt: new Date().toISOString()
         };
         
         dispatch(setCredentials({
           user,
-          accessToken: response.token,
-          refreshToken: response.token, // Using same token for now
+          accessToken: response.accessToken,
+          refreshToken: response.refreshToken,
           rememberMe
         }));
         
@@ -126,20 +133,20 @@ export function useAuth() {
   const register = async (data: RegisterData) => {
     try {
       const response = await authService.register(data);
-      if (response.token && response.email) {
-        // Create user object from email
+      if (response.accessToken && response.user) {
+        // Use the user data from response
         const user = {
-          id: '', // Backend doesn't return ID yet
-          email: response.email,
-          username: response.email.split('@')[0],
+          id: response.user.id,
+          email: response.user.email,
+          username: response.user.username,
           role: 'user' as const,
           createdAt: new Date().toISOString()
         };
         
         dispatch(setCredentials({
           user,
-          accessToken: response.token,
-          refreshToken: response.token, // Using same token for now
+          accessToken: response.accessToken,
+          refreshToken: response.refreshToken,
           rememberMe: true
         }));
         

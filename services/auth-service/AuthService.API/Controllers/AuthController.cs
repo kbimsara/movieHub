@@ -1,121 +1,183 @@
-using AuthService.Application.DTOs;
-using AuthService.Application.Interfaces;
+using AuthService.API.Data;
+using AuthService.API.DTOs;
+using AuthService.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AuthService.API.Controllers;
 
-/// <summary>
-/// Authentication endpoints for user registration and login.
-/// </summary>
 [ApiController]
-[Route("api/auth")]
+[Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly AuthDbContext _context;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, AuthDbContext context, ILogger<AuthController> logger)
     {
         _authService = authService;
+        _context = context;
+        _logger = logger;
     }
 
     /// <summary>
-    /// Register a new user account.
+    /// Register a new user
     /// </summary>
     [HttpPost("register")]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Register(RegisterRequestDto request)
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        var result = await _authService.RegisterAsync(request);
-        return Ok(result);
+        try
+        {
+            var response = await _authService.RegisterAsync(request);
+            return CreatedAtAction(nameof(Register), new { email = request.Email }, response);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during registration");
+            return StatusCode(500, new { error = "An error occurred during registration" });
+        }
     }
 
     /// <summary>
-    /// Login with existing credentials.
+    /// Login with email and password
     /// </summary>
     [HttpPost("login")]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Login(LoginRequestDto request)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var result = await _authService.LoginAsync(request);
-        return Ok(result);
+        try
+        {
+            var response = await _authService.LoginAsync(request);
+            return Ok(response);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during login");
+            return StatusCode(500, new { error = "An error occurred during login" });
+        }
     }
 
     /// <summary>
-    /// Get current authenticated user details from JWT token.
+    /// Refresh access token using refresh token
     /// </summary>
-    [HttpGet("me")]
+    [HttpPost("refresh")]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+    {
+        try
+        {
+            var response = await _authService.RefreshTokenAsync(request.RefreshToken);
+            return Ok(response);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during token refresh");
+            return StatusCode(500, new { error = "An error occurred during token refresh" });
+        }
+    }
+
+    /// <summary>
+    /// Logout and revoke refresh token
+    /// </summary>
+    [HttpPost("logout")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public IActionResult GetCurrentUser()
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Logout([FromBody] RefreshTokenRequest request)
     {
-        // Extract user info from JWT claims
-        var userId = User.FindFirst("sub")?.Value ?? User.FindFirst("userId")?.Value;
-        var email = User.FindFirst("email")?.Value;
-        var username = User.FindFirst("username")?.Value;
-        var role = User.FindFirst("role")?.Value ?? "user";
-
-        if (string.IsNullOrEmpty(userId))
+        try
         {
-            return Unauthorized(new { success = false, error = "Invalid or missing token" });
+            var result = await _authService.RevokeTokenAsync(request.RefreshToken);
+            if (result)
+            {
+                return Ok(new { message = "Logged out successfully" });
+            }
+            return BadRequest(new { error = "Invalid refresh token" });
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during logout");
+            return StatusCode(500, new { error = "An error occurred during logout" });
+        }
+    }
+
+    /// <summary>
+    /// Validate current token
+    /// </summary>
+    [HttpGet("validate")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult ValidateToken()
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+                     ?? User.FindFirst("sub")?.Value;
+        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value 
+                    ?? User.FindFirst("email")?.Value;
+        var username = User.FindFirst("username")?.Value;
 
         return Ok(new
         {
-            success = true,
-            data = new
-            {
-                id = userId,
-                email = email,
-                username = username,
-                role = role,
-                authenticated = true
-            }
+            valid = true,
+            userId,
+            email,
+            username
         });
     }
 
     /// <summary>
-    /// Delete a user account by email.
+    /// Get current user information
     /// </summary>
-    [HttpDelete("user/{email}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteUser(string email)
-    {
-        await _authService.DeleteUserAsync(email);
-        return NoContent();
-    }
-
-    /// <summary>
-    /// Health check endpoint.
-    /// </summary>
-    [HttpGet("health")]
-    public IActionResult Health()
-    {
-        return Ok(new { status = "healthy", service = "AuthService", version = "1.0" });
-    }
-
-    [HttpPost("refresh")]
+    [HttpGet("me")]
     [Authorize]
-    public async Task<IActionResult> RefreshToken()
+    [ProducesResponseType(typeof(UserInfo), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetCurrentUser()
     {
-        var userId = User.FindFirst("sub")?.Value;
-        if (string.IsNullOrEmpty(userId))
+        try
         {
-            return Unauthorized(new { success = false, error = "Invalid token" });
-        }
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+                             ?? User.FindFirst("sub")?.Value;
+            
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(new { error = "Invalid token" });
+            }
 
-        var email = User.FindFirst("email")?.Value;
-        if (string.IsNullOrEmpty(email))
+            // Get user from database
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return Unauthorized(new { error = "User not found" });
+            }
+
+            return Ok(new UserInfo
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email
+            });
+        }
+        catch (Exception ex)
         {
-            return Unauthorized(new { success = false, error = "Invalid token" });
+            _logger.LogError(ex, "Error getting current user");
+            return StatusCode(500, new { error = "An error occurred while retrieving user information" });
         }
-
-        var result = await _authService.RefreshTokenAsync(userId, email);
-        return Ok(result);
     }
 }
-

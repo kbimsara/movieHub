@@ -45,21 +45,6 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Ensure Elasticsearch index exists on startup
-using (var scope = app.Services.CreateScope())
-{
-    var searchRepository = scope.ServiceProvider.GetRequiredService<ISearchRepository>();
-    try
-    {
-        await searchRepository.EnsureIndexExistsAsync();
-        app.Logger.LogInformation("Elasticsearch index verified/created successfully");
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogWarning(ex, "Failed to ensure Elasticsearch index exists. Service will start anyway.");
-    }
-}
-
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {

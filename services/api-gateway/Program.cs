@@ -49,14 +49,18 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors();
 
-// Map controllers (health endpoint)
-app.MapControllers();
+// Map YARP reverse proxy FIRST - this handles all API routing
+app.MapReverseProxy();
 
 // Map health checks
 app.MapHealthChecks("/health");
 
-// Map YARP reverse proxy
-// This is the core - YARP will handle all routing based on appsettings.json
-app.MapReverseProxy();
+// Add gateway-specific endpoints without MapControllers to avoid conflicts
+app.MapGet("/api/gateway/health", () => Results.Ok(new 
+{ 
+    status = "healthy", 
+    service = "api-gateway", 
+    timestamp = DateTime.UtcNow 
+}));
 
 app.Run();
