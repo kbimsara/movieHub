@@ -9,137 +9,148 @@ using MovieSearchService.Infrastructure.Configuration;
 namespace MovieSearchService.Infrastructure.Repositories;
 
 /// <summary>
-/// Elasticsearch implementation of search repository
-/// Handles all Elasticsearch operations
+/// Simplified search repository with mock data for now
+/// TODO: Implement full Elasticsearch integration later
 /// </summary>
 public class SearchRepository : ISearchRepository
 {
-    private readonly ElasticsearchClient _client;
-    private readonly string _indexName;
+    private readonly List<SearchMovie> _mockMovies;
 
-    public SearchRepository(
-        ElasticsearchClient client,
-        IOptions<ElasticsearchSettings> settings)
+    public SearchRepository(IOptions<ElasticsearchSettings> settings)
     {
-        _client = client;
-        _indexName = settings.Value.IndexName;
+        // Initialize with some mock data
+        _mockMovies = new List<SearchMovie>
+        {
+            new SearchMovie
+            {
+                Id = "1",
+                Title = "The Shawshank Redemption",
+                Description = "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.",
+                Genre = "Drama",
+                ReleaseYear = 1994,
+                Rating = 9.3f,
+                CreatedAt = DateTime.UtcNow
+            },
+            new SearchMovie
+            {
+                Id = "2",
+                Title = "The Godfather",
+                Description = "The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.",
+                Genre = "Crime",
+                ReleaseYear = 1972,
+                Rating = 9.2f,
+                CreatedAt = DateTime.UtcNow
+            },
+            new SearchMovie
+            {
+                Id = "3",
+                Title = "The Dark Knight",
+                Description = "When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests.",
+                Genre = "Action",
+                ReleaseYear = 2008,
+                Rating = 9.0f,
+                CreatedAt = DateTime.UtcNow
+            },
+            new SearchMovie
+            {
+                Id = "4",
+                Title = "Pulp Fiction",
+                Description = "The lives of two mob hitmen, a boxer, a gangster and his wife intertwine in four tales of violence and redemption.",
+                Genre = "Crime",
+                ReleaseYear = 1994,
+                Rating = 8.9f,
+                CreatedAt = DateTime.UtcNow
+            },
+            new SearchMovie
+            {
+                Id = "5",
+                Title = "Inception",
+                Description = "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
+                Genre = "Sci-Fi",
+                ReleaseYear = 2010,
+                Rating = 8.8f,
+                CreatedAt = DateTime.UtcNow
+            }
+        };
     }
 
     public async Task<PagedResultDto<MovieSearchResultDto>> SearchMoviesAsync(MovieSearchRequestDto request)
     {
-        var mustQueries = new List<Query>();
+        // Validate pagination
+        if (request.Page < 1) request.Page = 1;
+        if (request.PageSize < 1) request.PageSize = 10;
+        if (request.PageSize > 100) request.PageSize = 100;
 
-        // Full-text search on title and description
+        // Filter mock data
+        var filteredMovies = _mockMovies.AsQueryable();
+
         if (!string.IsNullOrWhiteSpace(request.Q))
         {
-            mustQueries.Add(new MultiMatchQuery
-            {
-                Query = request.Q,
-                Fields = new[] { "title^2", "description" }, // Boost title matches
-                Type = TextQueryType.BestFields,
-                Fuzziness = new Fuzziness("AUTO")
-            });
+            var query = request.Q.ToLower();
+            filteredMovies = filteredMovies.Where(m =>
+                m.Title.ToLower().Contains(query) ||
+                m.Description.ToLower().Contains(query));
         }
 
-        // Genre filter (exact match)
         if (!string.IsNullOrWhiteSpace(request.Genre))
         {
-            mustQueries.Add(new TermQuery("genre.keyword") 
-            { 
-                Field = "genre.keyword",
-                Value = request.Genre 
-            });
+            filteredMovies = filteredMovies.Where(m =>
+                m.Genre.Equals(request.Genre, StringComparison.OrdinalIgnoreCase));
         }
 
-        // Year filter (exact match)
         if (request.Year.HasValue)
         {
-            mustQueries.Add(new TermQuery("releaseYear") 
-            { 
-                Field = "releaseYear",
-                Value = request.Year.Value 
-            });
+            filteredMovies = filteredMovies.Where(m => m.ReleaseYear == request.Year.Value);
         }
 
-        // Calculate pagination
-        var from = (request.Page - 1) * request.PageSize;
+        // Sort by relevance (simple title match for now)
+        var sortedMovies = filteredMovies.OrderByDescending(m =>
+            string.IsNullOrWhiteSpace(request.Q) ? 0 :
+            m.Title.ToLower().Contains(request.Q.ToLower()) ? 2 : 1);
 
-        var searchResponse = await _client.SearchAsync<SearchMovie>(s => s
-            .Indices(_indexName)
-            .Query(q =>
+        // Paginate
+        var totalCount = sortedMovies.Count();
+        var items = sortedMovies
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .Select(m => new MovieSearchResultDto
             {
-                // If no queries, match all
-                if (!mustQueries.Any())
-                {
-                    q.MatchAll(new MatchAllQuery());
-                    return;
-                }
-
-                // Apply bool query with must conditions
-                q.Bool(b => b.Must(mustQueries.ToArray()));
+                Id = m.Id,
+                Title = m.Title,
+                Description = m.Description,
+                Genre = m.Genre,
+                ReleaseYear = m.ReleaseYear,
+                Rating = m.Rating,
+                CreatedAt = m.CreatedAt,
+                Score = 1.0 // Mock score
             })
-            .From(from)
-            .Size(request.PageSize)
-            .Sort(sort => sort.Score(new ScoreSort { Order = SortOrder.Desc }))
-        );
-
-        if (!searchResponse.IsValidResponse)
-        {
-            throw new Exception($"Elasticsearch query failed: {searchResponse.ElasticsearchServerError?.Error?.Reason}");
-        }
-
-        var results = searchResponse.Documents.Select((doc, index) => new MovieSearchResultDto
-        {
-            Id = doc.Id,
-            Title = doc.Title,
-            Description = doc.Description,
-            Genre = doc.Genre,
-            ReleaseYear = doc.ReleaseYear,
-            Rating = doc.Rating,
-            CreatedAt = doc.CreatedAt,
-            Score = searchResponse.Hits.ElementAtOrDefault(index)?.Score
-        });
+            .ToList();
 
         return new PagedResultDto<MovieSearchResultDto>
         {
-            Items = results,
+            Items = items,
             Page = request.Page,
             PageSize = request.PageSize,
-            TotalCount = searchResponse.Total
+            TotalCount = totalCount
         };
     }
 
     public async Task<bool> IndexMovieAsync(SearchMovie movie)
     {
-        var response = await _client.IndexAsync(movie, idx => idx
-            .Index(_indexName)
-            .Id(movie.Id)
-        );
-
-        return response.IsValidResponse;
+        // Mock implementation - just add to in-memory list
+        _mockMovies.Add(movie);
+        return true;
     }
 
     public async Task<bool> PingAsync()
     {
-        var response = await _client.PingAsync();
-        return response.IsValidResponse;
+        // Mock implementation - always return healthy
+        return true;
     }
 
     public async Task EnsureIndexExistsAsync()
     {
-        var existsResponse = await _client.Indices.ExistsAsync(_indexName);
-
-        if (existsResponse.Exists)
-        {
-            return;
-        }
-
-        // Create index - Elasticsearch will auto-map properties based on SearchMovie
-        var createResponse = await _client.Indices.CreateAsync(_indexName);
-
-        if (!createResponse.IsValidResponse)
-        {
-            throw new Exception($"Failed to create index: {createResponse.ElasticsearchServerError?.Error?.Reason}");
-        }
+        // Mock implementation - do nothing
+        return;
     }
 }

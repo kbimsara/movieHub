@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppSelector } from '@/hooks/redux';
 import { Button } from '@/components/ui/button';
@@ -8,8 +10,44 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Moon, Sun, Monitor } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { user, logout } = useAuth();
+  const router = useRouter();
+  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const { activeSeeds } = useAppSelector((state) => state.torrent);
+
+  // Protect this page - redirect to login if not authenticated
+  useEffect(() => {
+    // Wait for auth state to stabilize before checking
+    // Don't redirect while auth is loading (session is being restored)
+    if (authLoading) {
+      console.log('🔄 Auth is loading, waiting for session restoration...');
+      return;
+    }
+
+    // Once auth has finished loading, check authentication status
+    if (!isAuthenticated) {
+      console.warn('⚠️ Settings page: Not authenticated, redirecting to login');
+      router.push('/auth/login');
+    } else {
+      console.log('✅ User is authenticated, settings page access granted');
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  // Show loading state while auth is being checked
+  if (authLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="animate-pulse space-y-4">
+          <div className="h-10 bg-gray-700 rounded w-1/4"></div>
+          <div className="h-64 bg-gray-700 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render content if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">

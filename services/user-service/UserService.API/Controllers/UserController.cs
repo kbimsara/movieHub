@@ -11,7 +11,7 @@ namespace UserService.API.Controllers;
 /// All endpoints require JWT authentication
 /// </summary>
 [ApiController]
-[Route("api/users")]
+[Route("api")]
 [Authorize] // ALL endpoints require authentication
 public class UserController : ControllerBase
 {
@@ -31,7 +31,8 @@ public class UserController : ControllerBase
     public async Task<ActionResult<UserProfileResponseDto>> GetMyProfile()
     {
         // Extract UserId from JWT token (sub claim)
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        // Note: Using "sub" directly because DefaultInboundClaimTypeMap was cleared
+        var userIdClaim = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         
         if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
         {
@@ -59,7 +60,8 @@ public class UserController : ControllerBase
         [FromBody] CreateUserProfileRequestDto request)
     {
         // Extract UserId from JWT token (sub claim)
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        // Note: Using "sub" directly because DefaultInboundClaimTypeMap was cleared
+        var userIdClaim = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         
         if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
         {
@@ -67,7 +69,8 @@ public class UserController : ControllerBase
         }
 
         // Extract Email from JWT token (email claim)
-        var email = User.FindFirst(ClaimTypes.Email)?.Value;
+        // Note: Using "email" directly because DefaultInboundClaimTypeMap was cleared
+        var email = User.FindFirst("email")?.Value ?? User.FindFirst(ClaimTypes.Email)?.Value;
         
         if (string.IsNullOrEmpty(email))
         {
@@ -103,7 +106,8 @@ public class UserController : ControllerBase
         [FromBody] UpdateUserProfileRequestDto request)
     {
         // Extract UserId from JWT token (sub claim)
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        // Note: Using "sub" directly because DefaultInboundClaimTypeMap was cleared
+        var userIdClaim = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         
         if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
         {

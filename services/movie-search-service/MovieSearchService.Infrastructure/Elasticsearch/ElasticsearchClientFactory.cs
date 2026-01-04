@@ -20,16 +20,16 @@ public class ElasticsearchClientFactory
     public ElasticsearchClient CreateClient()
     {
         var settings = new ElasticsearchClientSettings(new Uri(_settings.Url))
-            .DefaultIndex(_settings.IndexName);
+            .DefaultIndex(_settings.IndexName)
+            .RequestTimeout(TimeSpan.FromSeconds(30))
+            .ServerCertificateValidationCallback((sender, certificate, chain, errors) => true)
+            .DisableDirectStreaming();
 
         // Add authentication if credentials are provided
         if (!string.IsNullOrEmpty(_settings.Username) && !string.IsNullOrEmpty(_settings.Password))
         {
             settings.Authentication(new BasicAuthentication(_settings.Username, _settings.Password));
         }
-
-        // Disable certificate validation for development (remove in production)
-        settings.ServerCertificateValidationCallback((sender, certificate, chain, errors) => true);
 
         return new ElasticsearchClient(settings);
     }

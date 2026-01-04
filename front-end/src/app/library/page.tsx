@@ -22,8 +22,19 @@ export default function LibraryPage() {
   } = useUser();
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
+    // Wait for auth state to stabilize before checking
+    // Don't redirect while auth is loading (session is being restored)
+    if (authLoading) {
+      console.log('🔄 Auth is loading, waiting for session restoration...');
+      return;
+    }
+
+    // Once auth has finished loading, check authentication status
+    if (!isAuthenticated) {
+      console.warn('⚠️ Library page: Not authenticated, redirecting to login');
       router.push('/auth/login');
+    } else {
+      console.log('✅ User is authenticated, library page access granted');
     }
   }, [isAuthenticated, authLoading, router]);
 
