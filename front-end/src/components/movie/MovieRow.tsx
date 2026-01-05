@@ -10,9 +10,10 @@ interface MovieRowProps {
   title: string;
   movies: Movie[];
   showProgress?: boolean;
+  description?: string;
 }
 
-export default function MovieRow({ title, movies, showProgress = false }: MovieRowProps) {
+export default function MovieRow({ title, movies, showProgress = false, description }: MovieRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: 'left' | 'right') => {
@@ -28,7 +29,12 @@ export default function MovieRow({ title, movies, showProgress = false }: MovieR
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold">{title}</h2>
+      <div>
+        <h2 className="text-2xl font-bold">{title}</h2>
+        {description && (
+          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+        )}
+      </div>
       
       <div className="relative group/row">
         {/* Scroll Left Button */}

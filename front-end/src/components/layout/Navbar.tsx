@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Film, Search, Home, Library, Upload, Settings, LogOut, User, UserCircle } from 'lucide-react';
+import { Film, Search, Home, Library, Upload, Settings, LogOut, User, UserCircle, FolderUp, Files } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -77,17 +77,15 @@ export default function Navbar() {
                   <span>Library</span>
                 </Link>
 
-                {user?.role === 'admin' && (
-                  <Link
-                    href="/upload"
-                    className={`flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary ${
-                      isActive('/upload') ? 'text-primary' : 'text-muted-foreground'
-                    }`}
-                  >
-                    <Upload className="h-4 w-4" />
-                    <span>Upload</span>
-                  </Link>
-                )}
+                <Link
+                  href="/upload"
+                  className={`flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary ${
+                    isActive('/upload') ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                >
+                  <Upload className="h-4 w-4" />
+                  <span>Upload</span>
+                </Link>
               </>
             )}
           </div>
@@ -119,6 +117,14 @@ export default function Navbar() {
                   <DropdownMenuItem onClick={() => router.push('/library')}>
                     <Library className="mr-2 h-4 w-4" />
                     <span>My Library</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/uploads')}>
+                    <FolderUp className="mr-2 h-4 w-4" />
+                    <span>My Uploads</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/files')}>
+                    <Files className="mr-2 h-4 w-4" />
+                    <span>File Manager</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push('/settings')}>
                     <Settings className="mr-2 h-4 w-4" />

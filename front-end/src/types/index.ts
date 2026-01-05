@@ -104,10 +104,49 @@ export interface MovieMetadata {
   year: number;
   duration: number;
   genres: string[];
+  quality: '480p' | '720p' | '1080p' | '4K';
+  rating?: number;
   tags: string[];
   cast: string[];
   director?: string;
+  trailer?: string;
   poster?: File;
+}
+
+// File Management Types
+export interface FileMetadata {
+  id: string;
+  fileName: string;
+  originalName: string;
+  fileSize: number;
+  mimeType: string;
+  fileType: 'video' | 'image' | 'subtitle' | 'other';
+  url: string;
+  path: string;
+  uploadedAt: string;
+  userId: string;
+  movieId?: string;
+  width?: number;
+  height?: number;
+  duration?: number;
+  thumbnailUrl?: string;
+}
+
+export interface FileUploadResponse {
+  fileId: string;
+  url: string;
+  path: string;
+  metadata: FileMetadata;
+}
+
+export interface StorageStats {
+  totalFiles: number;
+  totalSize: number;
+  videoCount: number;
+  imageCount: number;
+  subtitleCount: number;
+  userQuota: number;
+  usedQuota: number;
 }
 
 // Torrent Types
