@@ -7,7 +7,7 @@ export const movieService = {
     filters?: SearchFilters,
     pagination?: PaginationParams
   ): Promise<ApiResponse<PaginatedResponse<Movie>>> {
-    const params = { ...filters, ...pagination };
+    const params = { ...filters, ...pagination, includeUnpublished: true };
     const response = await apiClient.get('/api/movies', { params });
     return response.data;
   },

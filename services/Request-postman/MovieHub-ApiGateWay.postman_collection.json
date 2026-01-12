@@ -353,6 +353,296 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Movie Management Service",
+			"item": [
+				{
+					"name": "Movies",
+					"item": [
+						{
+							"name": "Create Movie",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"title\": \"The Matrix\",\n  \"description\": \"A computer hacker learns about the true nature of reality.\",\n  \"genre\": \"Sci-Fi\",\n  \"releaseYear\": 1999,\n  \"durationMinutes\": 136,\n  \"rating\": 8.7,\n  \"posterUrl\": \"https://example.com/poster.jpg\",\n  \"trailerUrl\": \"https://youtube.com/watch?v=...\",\n  \"quality\": \"1080p\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "http://localhost:5000/api/manage/movies"
+							},
+							"response": []
+						},
+						{
+							"name": "Get All Movies",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:5000/api/manage/movies?includeUnpublished=false",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "5000",
+									"path": [
+										"api",
+										"manage",
+										"movies"
+									],
+									"query": [
+										{
+											"key": "includeUnpublished",
+											"value": "false"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Movie By ID",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": "http://localhost:5000/api/manage/movies/{{movie_id}}"
+							},
+							"response": []
+						},
+						{
+							"name": "Get My Movies",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": "http://localhost:5000/api/manage/movies/my-movies"
+							},
+							"response": []
+						},
+						{
+							"name": "Update Movie",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"title\": \"The Matrix Reloaded\",\n  \"description\": \"Neo and his allies race against time.\",\n  \"genre\": \"Sci-Fi\",\n  \"releaseYear\": 2003,\n  \"durationMinutes\": 138,\n  \"rating\": 7.2,\n  \"posterUrl\": \"https://example.com/poster2.jpg\",\n  \"trailerUrl\": \"https://youtube.com/watch?v=...\",\n  \"quality\": \"1080p\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": "http://localhost:5000/api/manage/movies/{{movie_id}}"
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Movie",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": "http://localhost:5000/api/manage/movies/{{movie_id}}"
+							},
+							"response": []
+						},
+						{
+							"name": "Publish Movie",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": "http://localhost:5000/api/manage/movies/{{movie_id}}/publish"
+							},
+							"response": []
+						},
+						{
+							"name": "Increment View Count",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": "http://localhost:5000/api/manage/movies/{{movie_id}}/view"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Upload",
+					"item": [
+						{
+							"name": "Upload Movie",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "VideoFile",
+											"type": "file",
+											"src": "path/to/video.mp4"
+										},
+										{
+											"key": "PosterFile",
+											"type": "file",
+											"src": "path/to/poster.jpg"
+										},
+										{
+											"key": "Title",
+											"value": "Inception",
+											"type": "text"
+										},
+										{
+											"key": "Description",
+											"value": "A thief who steals corporate secrets through dream-sharing technology.",
+											"type": "text"
+										},
+										{
+											"key": "Genre",
+											"value": "Sci-Fi",
+											"type": "text"
+										},
+										{
+											"key": "ReleaseYear",
+											"value": "2010",
+											"type": "text"
+										},
+										{
+											"key": "DurationMinutes",
+											"value": "148",
+											"type": "text"
+										},
+										{
+											"key": "Rating",
+											"value": "8.8",
+											"type": "text"
+										},
+										{
+											"key": "TrailerUrl",
+											"value": "https://youtube.com/watch?v=...",
+											"type": "text"
+										},
+										{
+											"key": "Quality",
+											"value": "1080p",
+											"type": "text"
+										}
+									]
+								},
+								"url": "http://localhost:5000/api/upload"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Upload Status",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": "http://localhost:5000/api/upload/{{session_id}}"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Files",
+					"item": [
+						{
+							"name": "Get File Metadata",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": "http://localhost:5000/api/files/{{file_id}}"
+							},
+							"response": []
+						},
+						{
+							"name": "Get Movie Files",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": "http://localhost:5000/api/files/movie/{{movie_id}}"
+							},
+							"response": []
+						},
+						{
+							"name": "Stream File",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": "http://localhost:5000/api/files/{{file_id}}/stream"
+							},
+							"response": []
+						},
+						{
+							"name": "Delete File",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": "http://localhost:5000/api/files/{{file_id}}"
+							},
+							"response": []
+						}
+					]
+				}
+			]
 		}
 	]
 }

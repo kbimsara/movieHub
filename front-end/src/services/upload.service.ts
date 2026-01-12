@@ -1,8 +1,9 @@
 import apiClient from '@/lib/api';
 import { ApiResponse, MovieMetadata, UploadProgress } from '@/types';
+import { fileService, FileUploadResponse } from './file.service';
 
 export const uploadService = {
-  // Upload movie file
+  // Upload movie file with poster and metadata
   async uploadMovie(
     file: File,
     metadata: MovieMetadata,
@@ -10,7 +11,26 @@ export const uploadService = {
   ): Promise<ApiResponse<{ uploadId: string; movieId: string }>> {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('metadata', JSON.stringify(metadata));
+    
+    // Add poster if provided
+    if (metadata.poster) {
+      formData.append('poster', metadata.poster);
+    }
+    
+    // Add metadata as JSON
+    formData.append('metadata', JSON.stringify({
+      title: metadata.title,
+      description: metadata.description,
+      year: metadata.year,
+      duration: metadata.duration,
+      genres: metadata.genres,
+      quality: metadata.quality,
+      rating: metadata.rating,
+      tags: metadata.tags,
+      cast: metadata.cast,
+      director: metadata.director,
+      trailer: metadata.trailer,
+    }));
 
     const response = await apiClient.post('/api/upload', formData, {
       headers: {
