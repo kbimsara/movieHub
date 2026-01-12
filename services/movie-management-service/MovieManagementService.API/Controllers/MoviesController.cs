@@ -38,21 +38,36 @@ public class MoviesController : ControllerBase
 
     [HttpGet("{id}")]
     [AllowAnonymous]
-    public async Task<ActionResult<MovieDto>> GetMovie(Guid id)
+    public async Task<ActionResult> GetMovie(Guid id)
     {
         var movie = await _movieService.GetMovieByIdAsync(id);
         if (movie == null)
-            return NotFound();
+            return NotFound(new { success = false, message = "Movie not found" });
 
-        return Ok(movie);
+        return Ok(new { success = true, data = movie });
     }
 
     [HttpGet]
     [AllowAnonymous]
-    public async Task<ActionResult<List<MovieDto>>> GetAllMovies([FromQuery] bool includeUnpublished = false)
+    public async Task<ActionResult> GetAllMovies([FromQuery] bool includeUnpublished = false, [FromQuery] int page = 1, [FromQuery] int limit = 24)
     {
         var movies = await _movieService.GetAllMoviesAsync(!includeUnpublished);
-        return Ok(movies);
+        
+        // Return in the format expected by frontend: ApiResponse<PaginatedResponse<Movie>>
+        var response = new
+        {
+            success = true,
+            data = new
+            {
+                data = movies,
+                total = movies.Count,
+                page = page,
+                limit = limit,
+                totalPages = (int)Math.Ceiling(movies.Count / (double)limit)
+            }
+        };
+        
+        return Ok(response);
     }
 
     [HttpGet("my-movies")]

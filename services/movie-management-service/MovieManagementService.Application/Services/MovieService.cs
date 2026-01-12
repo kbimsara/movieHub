@@ -30,7 +30,7 @@ public class MovieService : IMovieService
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             CreatedBy = userId,
-            IsPublished = false,
+            IsPublished = true,
             ViewCount = 0
         };
 
@@ -119,7 +119,7 @@ public class MovieService : IMovieService
             ReleaseYear = movie.ReleaseYear,
             DurationMinutes = movie.DurationMinutes,
             Rating = movie.Rating,
-            PosterUrl = movie.PosterUrl,
+            PosterUrl = ConvertToRelativeUrl(movie.PosterUrl),
             TrailerUrl = movie.TrailerUrl,
             Quality = movie.Quality,
             CreatedAt = movie.CreatedAt,
@@ -132,7 +132,7 @@ public class MovieService : IMovieService
                 Id = f.Id,
                 MovieId = f.MovieId,
                 FileName = f.FileName,
-                FilePath = f.FilePath,
+                FilePath = ConvertToRelativeUrl(f.FilePath),
                 FileType = f.FileType,
                 FileSize = f.FileSize,
                 Quality = f.Quality,
@@ -142,5 +142,18 @@ public class MovieService : IMovieService
                 IsProcessed = f.IsProcessed
             }).ToList()
         };
+    }
+
+    private static string ConvertToRelativeUrl(string path)
+    {
+        if (string.IsNullOrEmpty(path))
+            return path;
+        
+        // Convert /app/uploads/filename to /uploads/filename
+        if (path.StartsWith("/app/uploads/"))
+            return path.Replace("/app/uploads/", "/uploads/");
+        
+        // If already relative or external URL, return as is
+        return path;
     }
 }

@@ -9,6 +9,19 @@ using MovieManagementService.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel for large file uploads
+builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(options =>
+{
+    options.Limits.MaxRequestBodySize = 5368709120; // 5GB
+});
+
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 5368709120; // 5GB
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartHeadersLengthLimit = int.MaxValue;
+});
+
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -104,16 +117,45 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowAll");
 
+// Serve static files (videos and posters)
+var uploadPath = builder.Configuration["Storage:UploadPath"] ?? "/app/uploads";
+if (Directory.Exists(uploadPath))
+{
+    app.UseStaticFiles(new Microsoft.AspNetCore.Builder.StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadPath),
+        RequestPath = "/uploads",
+        OnPrepareResponse = ctx =>
+        {
+            // Enable video streaming with range requests
+            ctx.Context.Response.Headers.Append("Accept-Ranges", "bytes");
+            // Allow CORS for static files
+            ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
+        }
+    });
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Auto-create database
+// Health check endpoint
+app.MapGet("/health", () => Results.Ok(new 
+{ 
+    status = "healthy", 
+    service = "Movie Management Service",
+    timestamp = DateTime.UtcNow 
+}));
+
+// Auto-migrate database
 using (var scope = app.Services.CreateScope())
 {
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     var db = scope.ServiceProvider.GetRequiredService<MovieManagementContext>();
+    logger.LogInformation("Initializing database...");
     db.Database.EnsureCreated();
+    logger.LogInformation("Database initialized successfully");
 }
 
 app.Run();

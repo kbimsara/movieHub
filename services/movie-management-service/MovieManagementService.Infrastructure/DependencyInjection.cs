@@ -15,7 +15,12 @@ public static class DependencyInjection
     {
         // Database Context
         services.AddDbContext<MovieManagementContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+        {
+            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"));
+            // Suppress the pending model changes warning for now
+            options.ConfigureWarnings(warnings => 
+                warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+        });
 
         // Repositories
         services.AddScoped<IMovieRepository, MovieRepository>();
