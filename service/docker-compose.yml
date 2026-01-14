@@ -1,0 +1,89 @@
+services:
+  # Authentication Service
+  auth-service:
+    build:
+      context: ./auth-service/Auth.API
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5001
+      - ConnectionStrings__DefaultConnection=Host=postgres-auth-db;Database=AuthDb;Username=postgres;Password=${POSTGRES_PASSWORD}
+      - JWT__Key=${JWT_KEY}
+      - JWT__Issuer=${JWT_ISSUER}
+      - JWT__Audience=${JWT_AUDIENCE}
+    depends_on:
+      - postgres-auth-db
+    networks:
+      - moviehub-network
+
+  # Movie Service
+  movie-service:
+    build:
+      context: ./movie-service/Movie.API
+      dockerfile: Dockerfile
+    ports:
+      - "5002:5002"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5002
+      - ConnectionStrings__DefaultConnection=Host=postgres-movie-db;Database=MovieDb;Username=postgres;Password=${POSTGRES_PASSWORD}
+      - TMDB__ApiKey=${TMDB_API_KEY}
+      - TMDB__BaseUrl=https://api.themoviedb.org/3
+    depends_on:
+      - postgres-movie-db
+    networks:
+      - moviehub-network
+
+  # File Service
+  file-service:
+    build:
+      context: ./file-service/File.API
+      dockerfile: Dockerfile
+    ports:
+      - "5005:5005"
+    volumes:
+      - uploads_data:/app/uploads
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5005
+    networks:
+      - moviehub-network
+
+  # PostgreSQL Database for Auth Service
+  postgres-auth-db:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=AuthDb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+    networks:
+      - moviehub-network
+
+  # PostgreSQL Database for Movie Service
+  postgres-movie-db:
+    image: postgres:15-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_DB=MovieDb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - movie_db_data:/var/lib/postgresql/data
+    networks:
+      - moviehub-network
+
+volumes:
+  auth_db_data:
+  movie_db_data:
+  uploads_data:
+
+networks:
+  moviehub-network:
+    driver: bridge
