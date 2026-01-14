@@ -161,11 +161,15 @@ ServiceFabricBackup/
 # Docker
 docker-compose.override.yml
 docker-compose.*.local.yml
+service/docker-compose.override.yml
+service/docker-compose.*.local.yml
 .dockerignore.local
 
 # Docker volumes and data
 **/pgdata/
 **/postgres-data/
+service/**/pgdata/
+service/**/postgres-data/
 **/mysql-data/
 **/mongo-data/
 **/elasticsearch-data/
@@ -208,6 +212,9 @@ pgdata/
 !**/.env.template
 
 # Specific service environment files
+service/**/.env
+service/**/.env.local
+service/**/.env.production
 services/**/.env
 services/**/.env.local
 services/**/.env.production
