@@ -7,7 +7,7 @@ import { setCredentials, logout as logoutAction, setUser, updateTokens, setLoadi
 import { clearUserData } from '@/store/slices/userSlice';
 import { authService } from '@/services/auth.service';
 import { LoginCredentials, RegisterData } from '@/types';
-import { getSession, isSessionValid, clearSession } from '@/utils/session';
+import { getSession, isSessionValid, clearSession, decodeJWT } from '@/utils/session';
 
 export function useAuth() {
   const dispatch = useAppDispatch();
@@ -101,19 +101,20 @@ export function useAuth() {
       clearSession();
       
       const response = await authService.login(credentials);
-      if (response.accessToken && response.user) {
-        // Use the user data from response
+      if (response.token) {
+        // Decode JWT to get user info
+        const decoded = decodeJWT(response.token);
         const user = {
-          id: response.user.id,
-          email: response.user.email,
-          username: response.user.username,
+          id: decoded?.sub || 'unknown',
+          email: decoded?.email || credentials.email,
+          username: decoded?.unique_name || credentials.email,
           role: 'user' as const,
           createdAt: new Date().toISOString()
         };
         
         dispatch(setCredentials({
           user,
-          accessToken: response.accessToken,
+          accessToken: response.token,
           refreshToken: response.refreshToken,
           rememberMe
         }));
@@ -133,25 +134,10 @@ export function useAuth() {
   const register = async (data: RegisterData) => {
     try {
       const response = await authService.register(data);
-      if (response.accessToken && response.user) {
-        // Use the user data from response
-        const user = {
-          id: response.user.id,
-          email: response.user.email,
-          username: response.user.username,
-          role: 'user' as const,
-          createdAt: new Date().toISOString()
-        };
-        
-        dispatch(setCredentials({
-          user,
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
-          rememberMe: true
-        }));
-        
-        // Redirect to home page after successful registration
-        router.push('/');
+      if (response.token) {
+        // Registration successful, but no user data returned
+        // Redirect to login page
+        router.push('/auth/login');
         
         return { success: true };
       }

@@ -32,7 +32,7 @@ export const uploadService = {
       trailer: metadata.trailer,
     }));
 
-    const response = await apiClient.post('/api/upload', formData, {
+    const response = await apiClient.post('/api/files/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

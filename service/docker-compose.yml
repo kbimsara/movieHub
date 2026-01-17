@@ -1,18 +1,37 @@
 services:
+  # API Gateway - Single entry point
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./api-gateway/Dockerfile
+    ports:
+      - "5000:5000"
+    depends_on:
+      - auth-service
+      - movie-service
+      - user-service
+      - library-service
+      - file-service
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+    networks:
+      - moviehub-network
+
   # Authentication Service
   auth-service:
     build:
-      context: ./auth-service/Auth.API
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./auth-service/Auth.API/Dockerfile
     ports:
       - "5001:5001"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:5001
-      - ConnectionStrings__DefaultConnection=Host=postgres-auth-db;Database=AuthDb;Username=postgres;Password=${POSTGRES_PASSWORD}
-      - JWT__Key=${JWT_KEY}
-      - JWT__Issuer=${JWT_ISSUER}
-      - JWT__Audience=${JWT_AUDIENCE}
+      - ConnectionStrings__AuthDb=Host=postgres-auth-db;Database=AuthDb;Username=postgres;Password=${POSTGRES_PASSWORD}
+      - Jwt__SecretKey=${JWT_KEY}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
     depends_on:
       - postgres-auth-db
     networks:
@@ -21,26 +40,67 @@ services:
   # Movie Service
   movie-service:
     build:
-      context: ./movie-service/Movie.API
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./movie-service/Movie.API/Dockerfile
     ports:
       - "5002:5002"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:5002
-      - ConnectionStrings__DefaultConnection=Host=postgres-movie-db;Database=MovieDb;Username=postgres;Password=${POSTGRES_PASSWORD}
+      - ConnectionStrings__MovieDb=Host=postgres-movie-db;Database=MovieDb;Username=postgres;Password=${POSTGRES_PASSWORD}
       - TMDB__ApiKey=${TMDB_API_KEY}
       - TMDB__BaseUrl=https://api.themoviedb.org/3
+      - Jwt__SecretKey=${JWT_KEY}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
     depends_on:
       - postgres-movie-db
+    networks:
+      - moviehub-network
+
+  # User Service
+  user-service:
+    build:
+      context: .
+      dockerfile: ./user-service/User.API/Dockerfile
+    ports:
+      - "5003:5003"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5003
+      - ConnectionStrings__UserDb=Host=postgres-user-db;Database=UserDb;Username=postgres;Password=${POSTGRES_PASSWORD}
+      - Jwt__SecretKey=${JWT_KEY}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+    depends_on:
+      - postgres-user-db
+    networks:
+      - moviehub-network
+
+  # Library Service
+  library-service:
+    build:
+      context: .
+      dockerfile: ./library-service/Library.API/Dockerfile
+    ports:
+      - "5004:5004"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5004
+      - ConnectionStrings__LibraryDb=Host=postgres-library-db;Database=LibraryDb;Username=postgres;Password=${POSTGRES_PASSWORD}
+      - Jwt__SecretKey=${JWT_KEY}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+    depends_on:
+      - postgres-library-db
     networks:
       - moviehub-network
 
   # File Service
   file-service:
     build:
-      context: ./file-service/File.API
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./file-service/File.API/Dockerfile
     ports:
       - "5005:5005"
     volumes:
@@ -48,10 +108,13 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:5005
+      - Jwt__SecretKey=${JWT_KEY}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
     networks:
       - moviehub-network
 
-  # PostgreSQL Database for Auth Service
+  # PostgreSQL Databases
   postgres-auth-db:
     image: postgres:15-alpine
     ports:
@@ -65,7 +128,6 @@ services:
     networks:
       - moviehub-network
 
-  # PostgreSQL Database for Movie Service
   postgres-movie-db:
     image: postgres:15-alpine
     ports:
@@ -79,9 +141,37 @@ services:
     networks:
       - moviehub-network
 
+  postgres-user-db:
+    image: postgres:15-alpine
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_DB=UserDb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    networks:
+      - moviehub-network
+
+  postgres-library-db:
+    image: postgres:15-alpine
+    ports:
+      - "5435:5432"
+    environment:
+      - POSTGRES_DB=LibraryDb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - library_db_data:/var/lib/postgresql/data
+    networks:
+      - moviehub-network
+
 volumes:
   auth_db_data:
   movie_db_data:
+  user_db_data:
+  library_db_data:
   uploads_data:
 
 networks:
