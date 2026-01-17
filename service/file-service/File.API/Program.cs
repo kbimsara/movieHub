@@ -8,6 +8,12 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel to allow large request bodies
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Limits.MaxRequestBodySize = 100 * 1024 * 1024; // 100MB
+});
+
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -76,7 +82,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(
-        Path.Combine(builder.Environment.WebRootPath, "uploads")),
+        Path.Combine(Directory.GetCurrentDirectory(), "uploads")),
     RequestPath = "/uploads",
     ContentTypeProvider = new FileExtensionContentTypeProvider()
 });

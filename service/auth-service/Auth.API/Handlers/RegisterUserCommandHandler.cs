@@ -38,7 +38,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, A
 
         await _userRepository.AddAsync(user);
 
-        var token = _jwtTokenService.GenerateToken(user.Id.ToString(), user.Email);
+        var token = _jwtTokenService.GenerateToken(user.Id.ToString(), user.Email, user.Email);
         var refreshToken = _jwtTokenService.GenerateRefreshToken();
 
         return new AuthResponseDto

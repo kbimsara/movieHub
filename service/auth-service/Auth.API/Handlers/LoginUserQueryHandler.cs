@@ -25,7 +25,7 @@ public class LoginUserQueryHandler : IRequestHandler<LoginUserQuery, AuthRespons
             throw new Exception("Invalid credentials");
         }
 
-        var token = _jwtTokenService.GenerateToken(user.Id.ToString(), user.Email);
+        var token = _jwtTokenService.GenerateToken(user.Id.ToString(), user.Email, user.Email);
         var refreshToken = _jwtTokenService.GenerateRefreshToken();
 
         return new AuthResponseDto

@@ -11,7 +11,7 @@ public class FilesController : ControllerBase
 {
     private readonly IWebHostEnvironment _environment;
     private readonly string[] _allowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-    private const long MaxFileSize = 5 * 1024 * 1024; // 5MB
+    private const long MaxFileSize = 50 * 1024 * 1024; // 50MB
 
     public FilesController(IWebHostEnvironment environment)
     {
@@ -31,7 +31,7 @@ public class FilesController : ControllerBase
         // Validate file size
         if (file.Length > MaxFileSize)
         {
-            return BadRequest(new { message = "File size exceeds 5MB limit" });
+            return BadRequest(new { message = "File size exceeds 50MB limit" });
         }
 
         // Validate file extension
