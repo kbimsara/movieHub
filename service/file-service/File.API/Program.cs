@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Shared.JWT;
 using System.Text;
+using System.Threading.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,6 +65,32 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!))
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                context.HttpContext.RequestServices
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("JwtAuthentication")
+                    .LogWarning(context.Exception, "JWT authentication failed for {Path}", context.Request.Path);
+                return Task.CompletedTask;
+            },
+            OnChallenge = context =>
+            {
+                if (!context.Handled)
+                {
+                    context.HttpContext.RequestServices
+                        .GetRequiredService<ILoggerFactory>()
+                        .CreateLogger("JwtAuthentication")
+                        .LogWarning("JWT challenge triggered for {Path}: {Error} - {Description}",
+                            context.Request.Path,
+                            context.Error,
+                            context.ErrorDescription);
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 
