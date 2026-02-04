@@ -20,8 +20,9 @@ export const authService = {
   },
 
   // Logout
-  async logout(refreshToken: string): Promise<ApiResponse<{ message: string }>> {
-    const response = await apiClient.post('/api/auth/logout', { refreshToken });
+  async logout(refreshToken?: string): Promise<ApiResponse<{ message: string }>> {
+    const payload = refreshToken ? { refreshToken } : {};
+    const response = await apiClient.post('/api/auth/logout', payload);
     return response.data;
   },
 
@@ -31,17 +32,15 @@ export const authService = {
     return response.data;
   },
 
-  // Forgot password (not yet implemented in backend)
-  // async forgotPassword(email: string): Promise<ApiResponse<null>> {
-  //   const response = await apiClient.post('/api/auth/forgot-password', { email });
-  //   return response.data;
-  // },
+  async forgotPassword(email: string): Promise<ApiResponse<null>> {
+    const response = await apiClient.post('/api/auth/forgot-password', { email });
+    return response.data;
+  },
 
-  // Reset password (not yet implemented in backend)
-  // async resetPassword(token: string, password: string): Promise<ApiResponse<null>> {
-  //   const response = await apiClient.post('/api/auth/reset-password', { token, password });
-  //   return response.data;
-  // },
+  async resetPassword(token: string, password: string): Promise<ApiResponse<null>> {
+    const response = await apiClient.post('/api/auth/reset-password', { token, password });
+    return response.data;
+  },
 
   // Get current user
   async getCurrentUser(): Promise<ApiResponse<User>> {

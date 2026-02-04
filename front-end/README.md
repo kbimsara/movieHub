@@ -53,6 +53,18 @@ npm start
 
 **Access:** http://localhost:3000
 
+### Backend services required
+
+Run the gateway and auth service so the login flow can talk to the real API:
+
+```bash
+# From the repo root
+dotnet run --project service/apiGateway/ApiGateway.csproj
+dotnet run --project service/authService/WebApplication1.csproj
+```
+
+The gateway listens on http://localhost:5000 and forwards `/api/auth/*` to the auth service on http://localhost:5001.
+
 ---
 
 ## 🏗️ Architecture Overview
@@ -179,6 +191,9 @@ clearSession();
 Create `.env.local`:
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:5000
+# Optional: only needed when running inside Docker/SSR and you want
+# server components to talk to the gateway through the internal network.
+API_GATEWAY_INTERNAL_URL=http://api-gateway:8080
 ```
 
 ### Available Endpoints
@@ -365,6 +380,8 @@ const {
 
 ## 🐳 Docker
 
+### Standalone build
+
 ```bash
 # Build
 docker build -t moviehub-frontend .
@@ -372,6 +389,27 @@ docker build -t moviehub-frontend .
 # Run
 docker run -p 3000:3000 moviehub-frontend
 ```
+
+You can override the gateway URLs at build time:
+
+```bash
+docker build \
+  --build-arg NEXT_PUBLIC_API_BASE_URL=http://localhost:5000 \
+  --build-arg API_GATEWAY_INTERNAL_URL=http://api-gateway:8080 \
+  -t moviehub-frontend .
+```
+
+### docker-compose (full stack)
+
+The root `docker-compose.yml` now includes the frontend alongside the API gateway, auth service, and PostgreSQL. From the repo root:
+
+```bash
+docker compose up --build frontend api-gateway auth-service posgraph
+```
+
+- Frontend: http://localhost:3000
+- API Gateway: http://localhost:5000 (browser traffic)
+- Frontend server components use `API_GATEWAY_INTERNAL_URL` (defaults to `http://api-gateway:8080`) to talk to the gateway over the internal Docker network.
 
 ---
 

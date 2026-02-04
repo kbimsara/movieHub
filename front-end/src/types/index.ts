@@ -198,7 +198,7 @@ export interface SearchFilters {
   year?: number;
   quality?: string[];
   rating?: number;
-  sortBy?: 'title' | 'year' | 'rating' | 'views' | 'createdAt';
+  sortBy?: 'title' | 'year' | 'rating' | 'views' | 'createdAt' | 'relevance';
   sortOrder?: 'asc' | 'desc';
 }
 

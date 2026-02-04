@@ -1,5 +1,12 @@
 # Multi-stage build for Next.js application
+ARG NEXT_PUBLIC_API_BASE_URL="http://localhost:5000"
+ARG API_GATEWAY_INTERNAL_URL="http://api-gateway:8080"
+
 FROM node:20-alpine AS base
+ARG NEXT_PUBLIC_API_BASE_URL
+ARG API_GATEWAY_INTERNAL_URL
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+ENV API_GATEWAY_INTERNAL_URL=${API_GATEWAY_INTERNAL_URL}
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -24,6 +31,8 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+ENV API_GATEWAY_INTERNAL_URL=${API_GATEWAY_INTERNAL_URL}
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs

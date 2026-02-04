@@ -88,9 +88,12 @@ export default function UploadPage() {
         year: data.year,
         duration: data.duration,
         genres: data.genres.split(',').map((g) => g.trim()),
+        quality: data.quality,
+        rating: data.rating,
         tags: data.tags ? data.tags.split(',').map((t) => t.trim()) : [],
         cast: data.cast ? data.cast.split(',').map((c) => c.trim()) : [],
         director: data.director,
+        trailer: data.trailer || undefined,
       };
 
       const response = await uploadService.uploadMovie(

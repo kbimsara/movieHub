@@ -400,3 +400,4 @@ jwt.secret
 # API keys and tokens
 .apikeys
 apikeys.txt
+service 2.0.zip
