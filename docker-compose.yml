@@ -57,6 +57,55 @@ services:
     networks:
       - moviehub-net
 
+  file-service:
+    build:
+      context: ./service/fileService
+      dockerfile: Dockerfile
+    container_name: moviehub-file
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://0.0.0.0:8080
+      ConnectionStrings__Default: Host=posgraph;Port=5432;Database=moviehub;Username=moviehub;Password=moviehub
+      Storage__RootPath: /app/Uploads
+      Storage__PublicBaseUrl: http://localhost:5000
+      MovieService__BaseUrl: http://movie-service:8080
+    depends_on:
+      posgraph:
+        condition: service_healthy
+      movie-service:
+        condition: service_started
+    ports:
+      - "5003:8080"
+    volumes:
+      - uploads-data:/app/Uploads
+    networks:
+      - moviehub-net
+
+  user-service:
+    build:
+      context: ./service/userService
+      dockerfile: Dockerfile
+    container_name: moviehub-user
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://0.0.0.0:8080
+      ConnectionStrings__Default: Host=posgraph;Port=5432;Database=moviehub;Username=moviehub;Password=moviehub
+      Jwt__Key: ChangeMeToASecureKeyForProduction
+      Jwt__Issuer: MovieHub.AuthService
+      Jwt__Audience: MovieHub.Frontend
+      MovieService__BaseUrl: http://movie-service:8080
+    depends_on:
+      posgraph:
+        condition: service_healthy
+      movie-service:
+        condition: service_started
+    ports:
+      - "5004:8080"
+    networks:
+      - moviehub-net
+
   api-gateway:
     build:
       context: ./service/apiGateway
@@ -68,9 +117,13 @@ services:
       ASPNETCORE_URLS: http://0.0.0.0:8080
       ReverseProxy__Clusters__auth-cluster__Destinations__auth-service__Address: http://auth-service:8080/
       ReverseProxy__Clusters__movie-cluster__Destinations__movie-service__Address: http://movie-service:8080/
+      ReverseProxy__Clusters__file-cluster__Destinations__file-service__Address: http://file-service:8080/
+      ReverseProxy__Clusters__user-cluster__Destinations__user-service__Address: http://user-service:8080/
     depends_on:
       - auth-service
       - movie-service
+      - file-service
+      - user-service
     ports:
       - "5000:8080"
     networks:
@@ -102,4 +155,6 @@ networks:
 
 volumes:
   posgraph-data:
+    driver: local
+  uploads-data:
     driver: local

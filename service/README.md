@@ -3,7 +3,18 @@
 This folder hosts the backend microservices for the MovieHub platform. Currently it includes:
 
 - **apiGateway** (`net8.0` YARP reverse proxy) listening on `http://localhost:5000` and proxying `/api/auth/*`
-- **authService** (`net8.0` Web API) listening on `http://localhost:5001` and serving the authentication endpoints expected by the Next.js frontend
+- **authService** (`net8.0` Web API + PostgreSQL persistence) listening on `http://localhost:5001` and serving the authentication endpoints expected by the Next.js frontend
+- **movieService**, **fileService**, and **userService** which power the catalog, file uploads, and `/api/me/*` endpoints.
+
+### Default credentials
+
+The auth service seeds an admin account the first time it starts (or whenever the database is empty):
+
+| Email | Password | Role |
+| --- | --- | --- |
+| `demo@moviehub.local` | `Pass@123` | `admin` |
+
+You can sign in with the demo account immediately or register a new user (registrations are now stored in PostgreSQL so they persist across restarts).
 
 ## Running locally
 
@@ -30,7 +41,7 @@ msbuild MovieHub.Services.sln
 
 From Visual Studio, set **ApiGateway** as the startup project (or create a multi-start profile) so it launches alongside `AuthService`.
 
-### Using Docker Compose (gateway + auth + posgraph)
+### Using Docker Compose (gateway + auth + movie + file + user + posgraph)
 
 ```bash
 # From the repo root
@@ -41,6 +52,9 @@ Services included:
 
 - `api-gateway` → http://localhost:5000
 - `auth-service` → http://localhost:5001
+- `movie-service` → http://localhost:5002
+- `file-service` → http://localhost:5003
+- `user-service` → http://localhost:5004
 - `posgraph` (PostgreSQL 16) → localhost:5432 (user/pass/db: `moviehub`)
 
 Both .NET services now have Dockerfiles located beside their csproj files. The compose file wires the gateway to the auth container automatically and exposes Postgres for future persistence work.
