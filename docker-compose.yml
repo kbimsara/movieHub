@@ -1,0 +1,105 @@
+version: "3.9"
+
+services:
+  posgraph:
+    image: postgres:16
+    container_name: moviehub-posgraph
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: moviehub
+      POSTGRES_PASSWORD: moviehub
+      POSTGRES_DB: moviehub
+    volumes:
+      - posgraph-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U moviehub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    networks:
+      - moviehub-net
+
+  auth-service:
+    build:
+      context: ./service/authService
+      dockerfile: Dockerfile
+    container_name: moviehub-auth
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://0.0.0.0:8080
+      ConnectionStrings__Default: Host=posgraph;Port=5432;Database=moviehub;Username=moviehub;Password=moviehub
+    depends_on:
+      posgraph:
+        condition: service_healthy
+    ports:
+      - "5001:8080"
+    networks:
+      - moviehub-net
+
+  movie-service:
+    build:
+      context: ./service/movieService
+      dockerfile: Dockerfile
+    container_name: moviehub-movie
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://0.0.0.0:8080
+      ConnectionStrings__Default: Host=posgraph;Port=5432;Database=moviehub;Username=moviehub;Password=moviehub
+    depends_on:
+      posgraph:
+        condition: service_healthy
+    ports:
+      - "5002:8080"
+    networks:
+      - moviehub-net
+
+  api-gateway:
+    build:
+      context: ./service/apiGateway
+      dockerfile: Dockerfile
+    container_name: moviehub-gateway
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://0.0.0.0:8080
+      ReverseProxy__Clusters__auth-cluster__Destinations__auth-service__Address: http://auth-service:8080/
+      ReverseProxy__Clusters__movie-cluster__Destinations__movie-service__Address: http://movie-service:8080/
+    depends_on:
+      - auth-service
+      - movie-service
+    ports:
+      - "5000:8080"
+    networks:
+      - moviehub-net
+
+  frontend:
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:5000
+        API_GATEWAY_INTERNAL_URL: http://api-gateway:8080
+    container_name: moviehub-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:5000
+      API_GATEWAY_INTERNAL_URL: http://api-gateway:8080
+    depends_on:
+      - api-gateway
+    ports:
+      - "3000:3000"
+    networks:
+      - moviehub-net
+
+networks:
+  moviehub-net:
+    driver: bridge
+
+volumes:
+  posgraph-data:
+    driver: local

@@ -1,0 +1,22 @@
+@MovieService_HostAddress = http://localhost:5002
+
+### Get paged movies
+GET {{MovieService_HostAddress}}/api/movies?page=1&pageSize=10
+Accept: application/json
+
+### Create a movie
+POST {{MovieService_HostAddress}}/api/movies
+Content-Type: application/json
+
+{
+	"title": "Demo Movie",
+	"description": "A demo movie created via the HTTP file.",
+	"year": 2025,
+	"duration": 118,
+	"quality": "4K",
+	"genres": ["Action", "Drama"],
+	"tags": ["demo"],
+	"cast": [
+		{ "name": "Demo Actor", "character": "Agent Null" }
+	]
+}

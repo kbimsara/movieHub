@@ -47,15 +47,15 @@ export const movieService = {
   //   return response.data;
   // },
   
-  // async getRelatedMovies(movieId: string): Promise<ApiResponse<Movie[]>> {
-  //   const response = await apiClient.get(`/api/movies/${movieId}/related`);
-  //   return response.data;
-  // },
+  async getRelatedMovies(movieId: string): Promise<ApiResponse<Movie[]>> {
+    const response = await apiClient.get(`/api/movies/${movieId}/related`);
+    return response.data;
+  },
   
-  // async getGenres(): Promise<ApiResponse<string[]>> {
-  //   const response = await apiClient.get('/api/movies/genres');
-  //   return response.data;
-  // },
+  async getGenres(): Promise<ApiResponse<string[]>> {
+    const response = await apiClient.get('/api/movies/genres');
+    return response.data;
+  },
 
   // Create movie (admin only)
   async createMovie(movie: Partial<Movie>): Promise<ApiResponse<Movie>> {

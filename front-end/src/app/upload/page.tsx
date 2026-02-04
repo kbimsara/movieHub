@@ -126,8 +126,8 @@ export default function UploadPage() {
         tags: data.tags ? data.tags.split(',').map((t) => t.trim()) : [],
         cast: data.cast ? data.cast.split(',').map((c) => c.trim()) : [],
         director: data.director,
-        trailer: data.trailer,
-        poster: posterFile,
+        trailer: data.trailer || undefined,
+        poster: posterFile ?? undefined,
       };
 
       const response = await uploadService.uploadMovie(

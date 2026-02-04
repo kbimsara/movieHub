@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Search, Filter, X } from 'lucide-react';
+import { SearchFilters } from '@/types';
 
 const GENRES = [
   'Action',
@@ -83,11 +84,17 @@ export default function SearchPage() {
     setLocalFilters({ ...localFilters, quality: newQualities });
   };
 
+  const handleSearchSubmit = (searchInput: SearchFilters) => {
+    const nextQuery = searchInput.query ?? '';
+    searchMovies(nextQuery, true);
+    updateFilters(searchInput);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Search Bar */}
       <div className="mb-8">
-        <SearchBar />
+        <SearchBar onSearch={handleSearchSubmit} genres={GENRES} />
         
         <div className="flex items-center gap-4 mt-4">
           <Button
