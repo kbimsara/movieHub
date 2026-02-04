@@ -1,8 +1,10 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using MovieHub.AuthService.Data;
 using MovieHub.AuthService.Models;
 using MovieHub.AuthService.Options;
 using MovieHub.AuthService.Services;
@@ -18,10 +20,22 @@ if (string.IsNullOrWhiteSpace(configuredUrls))
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 
+var connectionString = builder.Configuration.GetConnectionString("Default");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("ConnectionStrings:Default is not configured.");
+}
+
+builder.Services.AddDbContext<AuthDbContext>(options =>
+{
+    options.UseNpgsql(connectionString);
+    options.UseSnakeCaseNamingConvention();
+});
+
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
-builder.Services.AddSingleton<IUserStore, InMemoryUserStore>();
-builder.Services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
-builder.Services.AddSingleton<ITokenService, TokenService>();
+builder.Services.AddScoped<IUserStore, EfUserStore>();
+builder.Services.AddScoped<IRefreshTokenStore, EfRefreshTokenStore>();
+builder.Services.AddScoped<ITokenService, TokenService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -111,4 +125,31 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+    await dbContext.Database.MigrateAsync();
+
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("AuthServiceSeeder");
+    if (!await dbContext.Users.AnyAsync())
+    {
+        var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
+        var userStore = scope.ServiceProvider.GetRequiredService<IUserStore>();
+
+        var demoUser = new User
+        {
+            Email = "demo@moviehub.local",
+            Username = "demo",
+            FirstName = "Demo",
+            LastName = "User",
+            Role = "admin",
+            CreatedAt = DateTime.UtcNow.AddDays(-7)
+        };
+
+        demoUser.PasswordHash = passwordHasher.HashPassword(demoUser, "Pass@123");
+        await userStore.AddAsync(demoUser);
+        logger.LogInformation("Seeded demo user demo@moviehub.local with password Pass@123");
+    }
+}
+
+await app.RunAsync();
