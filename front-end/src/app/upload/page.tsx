@@ -15,6 +15,52 @@ import { useToast } from '@/components/ui/toaster';
 import { Upload, FileVideo, X, Image as ImageIcon, Film, Info, Star, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
+// ---------------------------------------------------------------------------
+// Filename → title / year parser
+// ---------------------------------------------------------------------------
+/**
+ * Attempts to extract a clean movie title (and optional year) from a raw
+ * video filename such as:
+ *   "The.Dark.Knight.2008.1080p.BluRay.x264.mp4"  → { title: "The Dark Knight", year: 2008 }
+ *   "inception_2010_1080p.mkv"                    → { title: "Inception",        year: 2010 }
+ *   "Avengers Endgame (2019) [BluRay].mp4"        → { title: "Avengers Endgame", year: 2019 }
+ *   "The Matrix Reloaded.avi"                     → { title: "The Matrix Reloaded", year: null }
+ */
+function parseTitleFromFilename(filename: string): { title: string; year: number | null } {
+  // 1. Strip extension
+  let name = filename.replace(/\.[^/.]+$/, '');
+
+  // 2. Extract year — a 4-digit number (1900-2099) preceded by a separator
+  let year: number | null = null;
+  const yearMatch = name.match(/[.( _[-]((?:19|20)\d{2})(?:[.) _\]-]|$)/);
+  if (yearMatch && yearMatch.index !== undefined) {
+    year = parseInt(yearMatch[1], 10);
+    // Drop the year and everything after it (quality tags, etc.)
+    name = name.substring(0, yearMatch.index);
+  }
+
+  // 3. Remove bracketed / parenthesised blocks like [BluRay] or (Extended)
+  name = name.replace(/[[(][^\])]*/g, ' ').replace(/[\])]/, ' ');
+
+  // 4. Replace separators (dots, underscores, hyphens) with spaces
+  name = name.replace(/[._-]+/g, ' ');
+
+  // 5. Strip leftover quality / encoding tokens
+  name = name.replace(
+    /\b(1080p|720p|480p|2160p|4k|uhd|hdr10?|sdr|bluray|blu[-.]?ray|brrip|bdrip|dvdrip|dvdscr|webrip|web[-.]?dl|webdl|hdtv|hdrip|x264|x265|h264|h265|xvid|hevc|avc|aac|ac3|mp3|dts|atmos|extended|theatrical|remastered|unrated|directors?\.?cut|proper|repack|remux|scene|yify|yts|eztv)\b/gi,
+    ' '
+  );
+
+  // 6. Collapse extra whitespace and trim
+  name = name.replace(/\s{2,}/g, ' ').trim();
+
+  // 7. Title-case each word
+  name = name.replace(/\b\w/g, (c) => c.toUpperCase());
+
+  return { title: name, year };
+}
+// ---------------------------------------------------------------------------
+
 const movieMetadataSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
@@ -50,6 +96,7 @@ export default function UploadPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [detectedMeta, setDetectedMeta] = useState<DetectedMeta | null>(null);
   const [detectionFailed, setDetectionFailed] = useState(false);
+  const [detectedTitle, setDetectedTitle] = useState<string | null>(null);
 
   const {
     register,
@@ -128,6 +175,20 @@ export default function UploadPage() {
       setDetectionFailed(false);
       setIsAnalyzing(true);
 
+      // ── Title & year from filename ──────────────────────────────────────
+      const { title: parsedTitle, year: parsedYear } = parseTitleFromFilename(file.name);
+
+      if (parsedTitle) {
+        // Only auto-fill title if the field is currently empty
+        setValue('title', parsedTitle, { shouldValidate: false });
+        setDetectedTitle(parsedTitle);
+      }
+
+      if (parsedYear) {
+        setValue('year', parsedYear, { shouldValidate: false });
+      }
+      // ───────────────────────────────────────────────────────────────────
+
       try {
         const result = await detectVideoMetadata(file);
 
@@ -137,13 +198,13 @@ export default function UploadPage() {
           setDetectedMeta(result);
           toast({
             title: 'File ready',
-            description: `${result.durationMinutes} min · ${result.width}×${result.height} (${result.quality}) · ${(file.size / 1024 / 1024).toFixed(1)} MB`,
+            description: `"${parsedTitle || file.name}" · ${result.durationMinutes} min · ${result.width}×${result.height} (${result.quality}) · ${(file.size / 1024 / 1024).toFixed(1)} MB`,
           });
         } else {
           setDetectionFailed(true);
           toast({
             title: 'File selected',
-            description: `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB — please fill in duration and quality manually`,
+            description: `"${parsedTitle || file.name}" · ${(file.size / 1024 / 1024).toFixed(1)} MB — please fill in duration and quality manually`,
           });
         }
       } finally {
@@ -261,6 +322,13 @@ export default function UploadPage() {
     // Reset auto-detected fields back to defaults
     setValue('duration', undefined as unknown as number);
     setValue('quality', '1080p');
+    // Clear title / year only if they still hold the auto-detected values
+    // (i.e. the user hasn't manually edited them)
+    if (detectedTitle) {
+      setValue('title', '');
+      setValue('year', new Date().getFullYear());
+      setDetectedTitle(null);
+    }
   };
 
   const removePoster = () => {
@@ -383,8 +451,27 @@ export default function UploadPage() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="title">Title *</Label>
-                <Input id="title" placeholder="Enter movie title" {...register('title')} />
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="title">Title *</Label>
+                  {detectedTitle && (
+                    <span className="text-xs text-green-500 font-medium flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" /> auto-detected
+                    </span>
+                  )}
+                </div>
+                <Input
+                  id="title"
+                  placeholder="Enter movie title"
+                  className={detectedTitle ? 'border-green-500/50 focus-visible:ring-green-500/30' : ''}
+                  {...register('title')}
+                  onChange={(e) => {
+                    // If the user clears or changes the title manually, drop the badge
+                    if (detectedTitle && e.target.value !== detectedTitle) {
+                      setDetectedTitle(null);
+                    }
+                    register('title').onChange(e);
+                  }}
+                />
                 {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
               </div>
 
