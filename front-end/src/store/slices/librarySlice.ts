@@ -1,10 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { LibraryItem } from '@/types';
+import { LibraryItem, Movie } from '@/types';
 
 interface LibraryState {
   items: LibraryItem[];
   continueWatching: LibraryItem[];
-  favorites: LibraryItem[];
+  favorites: Movie[];
   isLoading: boolean;
   error: string | null;
 }
@@ -28,7 +28,7 @@ const librarySlice = createSlice({
     setContinueWatching: (state, action: PayloadAction<LibraryItem[]>) => {
       state.continueWatching = action.payload;
     },
-    setFavorites: (state, action: PayloadAction<LibraryItem[]>) => {
+    setFavorites: (state, action: PayloadAction<Movie[]>) => {
       state.favorites = action.payload;
     },
     addToLibrary: (state, action: PayloadAction<LibraryItem>) => {
@@ -37,7 +37,8 @@ const librarySlice = createSlice({
     removeFromLibrary: (state, action: PayloadAction<string>) => {
       state.items = state.items.filter(item => item.movieId !== action.payload);
       state.continueWatching = state.continueWatching.filter(item => item.movieId !== action.payload);
-      state.favorites = state.favorites.filter(item => item.movieId !== action.payload);
+      // favorites is Movie[] — filter by movie id
+      state.favorites = state.favorites.filter(movie => movie.id !== action.payload);
     },
     updateLibraryItem: (state, action: PayloadAction<LibraryItem>) => {
       const index = state.items.findIndex(item => item.id === action.payload.id);

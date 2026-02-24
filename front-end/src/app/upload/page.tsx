@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/components/ui/toaster';
-import { Upload, FileVideo, X, Image as ImageIcon, Film, Info, Star, CheckCircle2 } from 'lucide-react';
+import { Upload, FileVideo, X, Image as ImageIcon, Film, Info, Star, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
 const movieMetadataSchema = z.object({
@@ -31,6 +31,13 @@ const movieMetadataSchema = z.object({
 
 type MovieMetadataForm = z.infer<typeof movieMetadataSchema>;
 
+interface DetectedMeta {
+  durationMinutes: number;
+  quality: '480p' | '720p' | '1080p' | '4K';
+  width: number;
+  height: number;
+}
+
 export default function UploadPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -40,6 +47,9 @@ export default function UploadPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'processing' | 'ready' | 'failed'>('idle');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [detectedMeta, setDetectedMeta] = useState<DetectedMeta | null>(null);
+  const [detectionFailed, setDetectionFailed] = useState(false);
 
   const {
     register,
@@ -47,6 +57,7 @@ export default function UploadPage() {
     formState: { errors },
     reset,
     watch,
+    setValue,
   } = useForm<MovieMetadataForm>({
     resolver: zodResolver(movieMetadataSchema),
     defaultValues: {
@@ -55,30 +66,106 @@ export default function UploadPage() {
     },
   });
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) {
-      setUploadFile(acceptedFiles[0]);
-      toast({
-        title: 'File Selected',
-        description: `${acceptedFiles[0].name} (${(acceptedFiles[0].size / 1024 / 1024).toFixed(2)} MB)`,
-      });
-    }
-  }, [toast]);
+  // Detect duration and resolution from the video file using the browser's video element.
+  // Resolves with detected values when successful, or detected=false when the browser
+  // can't read the file (e.g. MKV in Safari) or the 10-second timeout fires.
+  const detectVideoMetadata = useCallback(
+    (file: File): Promise<{ detected: false } | ({ detected: true } & DetectedMeta)> =>
+      new Promise((resolve) => {
+        const url = URL.createObjectURL(file);
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.muted = true;
+
+        const cleanup = () => URL.revokeObjectURL(url);
+
+        // Fallback if metadata never loads (unsupported codec / slow disk)
+        const timeout = setTimeout(() => {
+          cleanup();
+          resolve({ detected: false });
+        }, 10_000);
+
+        video.onloadedmetadata = () => {
+          clearTimeout(timeout);
+          cleanup();
+
+          const rawSeconds = video.duration;
+          const durationMinutes = Math.max(1, Math.round(rawSeconds / 60));
+          const height = video.videoHeight;
+          const width = video.videoWidth;
+
+          if (height === 0 || rawSeconds === 0 || !isFinite(rawSeconds)) {
+            resolve({ detected: false });
+            return;
+          }
+
+          const quality: '480p' | '720p' | '1080p' | '4K' =
+            height >= 2160 ? '4K' :
+            height >= 1080 ? '1080p' :
+            height >= 720  ? '720p'  : '480p';
+
+          resolve({ detected: true, durationMinutes, quality, width, height });
+        };
+
+        video.onerror = () => {
+          clearTimeout(timeout);
+          cleanup();
+          resolve({ detected: false });
+        };
+
+        video.src = url;
+      }),
+    []
+  );
+
+  const onDrop = useCallback(
+    async (acceptedFiles: File[]) => {
+      if (acceptedFiles.length === 0) return;
+
+      const file = acceptedFiles[0];
+      setUploadFile(file);
+      setDetectedMeta(null);
+      setDetectionFailed(false);
+      setIsAnalyzing(true);
+
+      try {
+        const result = await detectVideoMetadata(file);
+
+        if (result.detected) {
+          setValue('duration', result.durationMinutes);
+          setValue('quality', result.quality);
+          setDetectedMeta(result);
+          toast({
+            title: 'File ready',
+            description: `${result.durationMinutes} min · ${result.width}×${result.height} (${result.quality}) · ${(file.size / 1024 / 1024).toFixed(1)} MB`,
+          });
+        } else {
+          setDetectionFailed(true);
+          toast({
+            title: 'File selected',
+            description: `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB — please fill in duration and quality manually`,
+          });
+        }
+      } finally {
+        setIsAnalyzing(false);
+      }
+    },
+    [detectVideoMetadata, setValue, toast]
+  );
 
   const onPosterDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
       setPosterFile(file);
-      
-      // Create preview
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setPosterPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-      
+
       toast({
-        title: 'Poster Selected',
+        title: 'Poster selected',
         description: file.name,
       });
     }
@@ -104,10 +191,7 @@ export default function UploadPage() {
 
   const onSubmit = async (data: MovieMetadataForm) => {
     if (!uploadFile) {
-      toast({
-        title: 'Error',
-        description: 'Please select a video file',
-      });
+      toast({ title: 'Error', description: 'Please select a video file' });
       return;
     }
 
@@ -133,62 +217,50 @@ export default function UploadPage() {
       const response = await uploadService.uploadMovie(
         uploadFile,
         metadata,
-        (progress) => {
-          setUploadProgress(progress);
-        }
+        (progress) => setUploadProgress(progress)
       );
 
       if (response.success) {
         setUploadStatus('processing');
-        toast({
-          title: 'Upload Complete',
-          description: 'Your movie is being processed',
-        });
+        toast({ title: 'Upload complete', description: 'Your movie is being processed' });
 
         const movieId = response.data?.movieId;
 
-        // Poll for processing status
         setTimeout(() => {
           setUploadStatus('ready');
-          toast({
-            title: 'Success! 🎉',
-            description: 'Your movie is now live and available to everyone!',
-          });
-          
-          // Redirect to movie page or home
+          toast({ title: 'Success!', description: 'Your movie is now live!' });
           setTimeout(() => {
-            if (movieId) {
-              router.push(`/movie/${movieId}`);
-            } else {
-              router.push('/');
-            }
+            router.push(movieId ? `/movie/${movieId}` : '/');
           }, 2000);
         }, 3000);
       }
     } catch (error: any) {
       setUploadStatus('failed');
       setUploadProgress(0);
-      
-      // Better error handling for 404 (endpoint not implemented)
+      setIsUploading(false);
+
       if (error.response?.status === 404) {
         toast({
-          title: '🚧 Backend Not Ready',
-          description: 'The upload API endpoint is not implemented yet. Please set up the backend service first. See BACKEND_SETUP_REQUIRED.md for instructions.',
+          title: 'Backend not ready',
+          description: 'The upload API endpoint is not yet implemented.',
         });
       } else {
         toast({
-          title: 'Upload Failed',
+          title: 'Upload failed',
           description: error.message || 'An error occurred during upload',
         });
       }
-      
-      setIsUploading(false);
     }
   };
 
   const removeFile = () => {
     setUploadFile(null);
     setUploadProgress(0);
+    setDetectedMeta(null);
+    setDetectionFailed(false);
+    // Reset auto-detected fields back to defaults
+    setValue('duration', undefined as unknown as number);
+    setValue('quality', '1080p');
   };
 
   const removePoster = () => {
@@ -214,19 +286,6 @@ export default function UploadPage() {
         </div>
       </div>
 
-      {/* Backend Warning */}
-      <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-start gap-3">
-        <Info className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" />
-        <div className="text-sm">
-          <p className="font-medium text-yellow-600 mb-1">⚠️ Backend Setup Required</p>
-          <p className="text-muted-foreground">
-            The upload API endpoints need to be implemented on the backend. See{' '}
-            <code className="px-1 py-0.5 bg-muted rounded text-xs">FILE_MANAGEMENT_SYSTEM.md</code>{' '}
-            for implementation details.
-          </p>
-        </div>
-      </div>
-
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Main Upload Section */}
         <div className="lg:col-span-2 space-y-6">
@@ -236,11 +295,11 @@ export default function UploadPage() {
               <Film className="h-5 w-5" />
               <h2 className="text-xl font-semibold">Movie File</h2>
             </div>
-            
+
             {!uploadFile ? (
               <div {...getRootProps()} className="cursor-pointer">
                 <input {...getInputProps()} />
-                <div className="border-2 border-dashed rounded-lg p-12">
+                <div className={`border-2 border-dashed rounded-lg p-12 transition-colors ${isDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'}`}>
                   <div className="flex flex-col items-center justify-center space-y-4">
                     <Upload className="h-16 w-16 text-muted-foreground" />
                     <div className="text-center">
@@ -250,39 +309,59 @@ export default function UploadPage() {
                       <p className="text-sm text-muted-foreground mt-2">
                         or click to browse (MP4, MKV, AVI, MOV, WMV)
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Maximum file size: 10GB
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">Maximum file size: 10 GB</p>
                     </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <div>
+              <div className="space-y-3">
                 <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
                   <div className="flex items-center gap-4">
-                    <FileVideo className="h-8 w-8" />
-                    <div>
-                      <p className="font-medium">{uploadFile.name}</p>
+                    {isAnalyzing ? (
+                      <Loader2 className="h-8 w-8 animate-spin text-primary flex-shrink-0" />
+                    ) : (
+                      <FileVideo className="h-8 w-8 flex-shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{uploadFile.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {(uploadFile.size / 1024 / 1024).toFixed(2)} MB
+                        {(uploadFile.size / 1024 / 1024).toFixed(1)} MB
+                        {isAnalyzing && <span className="ml-2 text-primary animate-pulse">Detecting video details…</span>}
                       </p>
                     </div>
                   </div>
-                  {!isUploading && (
-                    <Button variant="ghost" size="icon" onClick={removeFile}>
+                  {!isUploading && !isAnalyzing && (
+                    <Button variant="ghost" size="icon" onClick={removeFile} className="flex-shrink-0">
                       <X className="h-5 w-5" />
                     </Button>
                   )}
                 </div>
 
+                {/* Detection result banner */}
+                {!isAnalyzing && detectedMeta && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-green-500/10 border border-green-500/20 text-sm text-green-600">
+                    <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                    <span>
+                      Auto-detected: <strong>{detectedMeta.durationMinutes} min</strong> · <strong>{detectedMeta.width}×{detectedMeta.height}</strong> ({detectedMeta.quality})
+                    </span>
+                  </div>
+                )}
+
+                {!isAnalyzing && detectionFailed && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-yellow-500/10 border border-yellow-500/20 text-sm text-yellow-600">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>Could not read video metadata — please fill in duration and quality manually.</span>
+                  </div>
+                )}
+
                 {/* Upload Progress */}
                 {isUploading && (
-                  <div className="mt-4 space-y-2">
+                  <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">
-                        {uploadStatus === 'uploading' && 'Uploading...'}
-                        {uploadStatus === 'processing' && 'Processing...'}
+                        {uploadStatus === 'uploading' && 'Uploading…'}
+                        {uploadStatus === 'processing' && 'Processing…'}
                         {uploadStatus === 'ready' && 'Complete!'}
                         {uploadStatus === 'failed' && 'Failed'}
                       </span>
@@ -301,7 +380,7 @@ export default function UploadPage() {
               <Info className="h-5 w-5" />
               <h2 className="text-xl font-semibold">Movie Information</h2>
             </div>
-            
+
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="title">Title *</Label>
@@ -333,21 +412,40 @@ export default function UploadPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="duration">Duration (minutes) *</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="duration">Duration (minutes) *</Label>
+                    {isAnalyzing && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+                    {!isAnalyzing && detectedMeta && (
+                      <span className="text-xs text-green-500 font-medium flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> auto-detected
+                      </span>
+                    )}
+                  </div>
                   <Input
                     id="duration"
                     type="number"
                     placeholder="120"
+                    className={detectedMeta ? 'border-green-500/50 focus-visible:ring-green-500/30' : ''}
                     {...register('duration', { valueAsNumber: true })}
                   />
                   {errors.duration && <p className="text-sm text-destructive">{errors.duration.message}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="quality">Quality *</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="quality">Quality *</Label>
+                    {isAnalyzing && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+                    {!isAnalyzing && detectedMeta && (
+                      <span className="text-xs text-green-500 font-medium flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> auto-detected
+                      </span>
+                    )}
+                  </div>
                   <select
                     id="quality"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                      detectedMeta ? 'border-green-500/50 focus-visible:ring-green-500/30' : 'border-input'
+                    }`}
                     {...register('quality')}
                   >
                     <option value="480p">480p</option>
@@ -359,7 +457,7 @@ export default function UploadPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="rating">Rating (0-10)</Label>
+                  <Label htmlFor="rating">Rating (0–10)</Label>
                   <Input
                     id="rating"
                     type="number"
@@ -401,9 +499,14 @@ export default function UploadPage() {
               </div>
 
               <div className="flex gap-4 pt-4">
-                <Button type="submit" disabled={!uploadFile || isUploading} className="flex-1">
-                  {isUploading ? (
-                    uploadStatus === 'uploading' ? 'Uploading...' : 'Processing...'
+                <Button type="submit" disabled={!uploadFile || isUploading || isAnalyzing} className="flex-1">
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Analyzing…
+                    </>
+                  ) : isUploading ? (
+                    uploadStatus === 'uploading' ? 'Uploading…' : 'Processing…'
                   ) : (
                     <>
                       <Upload className="mr-2 h-4 w-4" />
@@ -432,20 +535,18 @@ export default function UploadPage() {
               <ImageIcon className="h-5 w-5" />
               <h2 className="text-xl font-semibold">Poster Image</h2>
             </div>
-            
+
             {!posterPreview ? (
               <div {...getPosterRootProps()} className="cursor-pointer">
                 <input {...getPosterInputProps()} />
-                <div className="border-2 border-dashed rounded-lg p-6">
+                <div className={`border-2 border-dashed rounded-lg p-6 transition-colors ${isPosterDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'}`}>
                   <div className="flex flex-col items-center justify-center space-y-3">
                     <ImageIcon className="h-12 w-12 text-muted-foreground" />
                     <div className="text-center">
                       <p className="text-sm font-medium">
                         {isPosterDragActive ? 'Drop here' : 'Upload Poster'}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        JPG, PNG, WebP
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">JPG, PNG, WebP</p>
                     </div>
                   </div>
                 </div>
@@ -504,12 +605,12 @@ export default function UploadPage() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                {watch('description')?.length >= 10 ? (
+                {(watch('description')?.length ?? 0) >= 10 ? (
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                 ) : (
                   <div className="h-4 w-4 rounded-full border-2" />
                 )}
-                <span className={watch('description')?.length >= 10 ? 'text-green-500' : 'text-muted-foreground'}>
+                <span className={(watch('description')?.length ?? 0) >= 10 ? 'text-green-500' : 'text-muted-foreground'}>
                   Description added
                 </span>
               </div>
@@ -523,6 +624,16 @@ export default function UploadPage() {
                   Genres specified
                 </span>
               </div>
+              <div className="flex items-center gap-2">
+                {watch('duration') > 0 ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                ) : (
+                  <div className="h-4 w-4 rounded-full border-2" />
+                )}
+                <span className={watch('duration') > 0 ? 'text-green-500' : 'text-muted-foreground'}>
+                  Duration set{detectedMeta ? ' (auto)' : ''}
+                </span>
+              </div>
             </div>
           </Card>
 
@@ -533,11 +644,12 @@ export default function UploadPage() {
               Upload Tips
             </h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• Use high-quality posters (recommended: 2000x3000px)</li>
+              <li>• Duration and quality are auto-detected from MP4, MOV, and WebM files</li>
+              <li>• MKV / AVI may require manual entry in some browsers</li>
+              <li>• Use high-quality posters (recommended: 2000×3000 px)</li>
               <li>• Provide detailed descriptions for better discoverability</li>
               <li>• Add multiple genres and tags</li>
-              <li>• Include trailer URL if available</li>
-              <li>• Ensure video quality matches the selected option</li>
+              <li>• Include a trailer URL if available</li>
             </ul>
           </Card>
         </div>
