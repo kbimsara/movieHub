@@ -20,6 +20,7 @@ export default function MovieCard({ movie, showProgress = false, progress = 0 }:
 
   const handleAddToLibrary = async (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     const result = await addToLibrary(movie.id);
     if (result.success) {
       toast({
@@ -43,6 +44,7 @@ export default function MovieCard({ movie, showProgress = false, progress = 0 }:
             src={movie.poster || '/placeholder.jpg'}
             alt={movie.title}
             fill
+            unoptimized
             className="object-cover transition-transform group-hover/card:scale-110"
           />
           

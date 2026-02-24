@@ -92,7 +92,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://0.0.0.0:8080
       ConnectionStrings__Default: Host=posgraph;Port=5432;Database=moviehub;Username=moviehub;Password=moviehub
-      Jwt__Key: ChangeMeToASecureKeyForProduction
+      # Align with auth service Jwt:Key so tokens validate correctly
+      Jwt__Key: LocalDevelopmentSuperSecretKey123!
       Jwt__Issuer: MovieHub.AuthService
       Jwt__Audience: MovieHub.Frontend
       MovieService__BaseUrl: http://movie-service:8080

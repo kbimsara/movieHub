@@ -24,16 +24,11 @@ export default function HomePage() {
   }, []);
 
   // Sort movies by creation date (newest first) to show recently uploaded
-  const recentlyAdded = [...movies].sort((a, b) => 
+  const recentlyAdded = [...movies].sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   ).slice(0, 12);
 
   const featuredMovie = movies[0];
-
-  useEffect(() => {
-    // Fetch all movies since trending/popular/topRated endpoints don't exist yet
-    fetchMovies();
-  }, []);
 
   if (isLoading) {
     return (
