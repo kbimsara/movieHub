@@ -65,7 +65,12 @@ public class FilesController : ControllerBase
             return BadRequest(ApiResponse<UploadMovieResultDto>.Fail("Metadata is required"));
         }
 
-        var userId = GetUserId() ?? "demo-user";
+        var userId = GetUserId();
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(ApiResponse<UploadMovieResultDto>.Fail("Authentication required to upload files"));
+        }
+
         var result = await _fileUploadService.UploadMovieAsync(request.File, request.Poster, metadata, userId, cancellationToken);
         return Ok(ApiResponse<UploadMovieResultDto>.Ok(result));
     }

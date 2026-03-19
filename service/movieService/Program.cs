@@ -36,7 +36,7 @@ static async Task ApplyMigrationsAndSeedAsync(IServiceProvider services, ILogger
 {
     using var scope = services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<MovieDbContext>();
-    await dbContext.Database.EnsureCreatedAsync();
+    await dbContext.Database.MigrateAsync();
 
     var seedLogger = scope.ServiceProvider
         .GetRequiredService<ILoggerFactory>()

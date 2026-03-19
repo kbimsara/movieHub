@@ -31,6 +31,9 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://0.0.0.0:8080
       ConnectionStrings__Default: Host=posgraph;Port=5432;Database=moviehub;Username=moviehub;Password=moviehub
+      Jwt__Key: LocalDevelopmentSuperSecretKey123!
+      Jwt__Issuer: MovieHub.AuthService
+      Jwt__Audience: MovieHub.Frontend
     depends_on:
       posgraph:
         condition: service_healthy
@@ -52,6 +55,12 @@ services:
     depends_on:
       posgraph:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/movies?limit=1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     ports:
       - "5002:8080"
     networks:
@@ -74,7 +83,7 @@ services:
       posgraph:
         condition: service_healthy
       movie-service:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "5003:8080"
     volumes:
@@ -101,7 +110,7 @@ services:
       posgraph:
         condition: service_healthy
       movie-service:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "5004:8080"
     networks:

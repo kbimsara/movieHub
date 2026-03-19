@@ -1,4 +1,4 @@
-# MovieHub 🎬
+# MovieHub
 
 A self-hosted video streaming platform built with a microservices architecture. Upload, catalog, and watch movies with HLS adaptive streaming, direct download, and P2P torrent seeding — all from a single Docker Compose command.
 
@@ -16,6 +16,7 @@ A self-hosted video streaming platform built with a microservices architecture. 
 - [API Routes](#api-routes)
 - [Environment Variables](#environment-variables)
 - [Database](#database)
+- [Security Notes](#security-notes)
 
 ---
 
@@ -273,6 +274,13 @@ ConnectionStrings__Default=Host=localhost;Port=5432;Database=moviehub;Username=m
 ASPNETCORE_ENVIRONMENT=Development
 ```
 
+### Auth Service (additional)
+```
+Jwt__Key=LocalDevelopmentSuperSecretKey123!
+Jwt__Issuer=MovieHub.AuthService
+Jwt__Audience=MovieHub.Frontend
+```
+
 ### User Service (additional)
 ```
 Jwt__Key=LocalDevelopmentSuperSecretKey123!
@@ -322,3 +330,13 @@ Run `docker compose down -v` to wipe the database and start fresh.
 3. Add a new route + cluster in `service/apiGateway/appsettings.json`
 4. Add the service to `docker-compose.yml` with `depends_on: posgraph`
 5. Call it from the frontend via `/api/<your-prefix>/*`
+
+---
+
+## Security Notes
+
+- **JWT key**: The `Jwt__Key` value in `docker-compose.yml` is for local development only. Override it with a strong random secret (32+ characters) before deploying to any shared or production environment.
+- **Demo account**: The auth service seeds `demo@moviehub.local / Pass@123` on the very first startup (when the `Users` table is empty). Change or remove this account after initial setup.
+- **Swagger UI**: Swagger is only exposed in the `Development` environment. Set `ASPNETCORE_ENVIRONMENT=Production` to disable it.
+- **File uploads**: All upload endpoints require a valid JWT. Anonymous upload requests are rejected with `401 Unauthorized`.
+- **Database password**: The default PostgreSQL password (`moviehub`) in `docker-compose.yml` is suitable for local development only — use a strong password and secrets management in production.

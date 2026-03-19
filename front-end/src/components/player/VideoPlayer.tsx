@@ -91,12 +91,12 @@ export default function VideoPlayer({ movie, onProgressUpdate }: VideoPlayerProp
     } else if (isHls && video.canPlayType('application/vnd.apple.mpegurl')) {
       // Safari native HLS
       video.src = src;
-      video.play().catch(() => {});
+      video.play().catch((err) => console.warn('[VideoPlayer] autoplay blocked:', err));
     } else {
       // Plain MP4 / WebM — use native video element with range-request seeking
       video.src = src;
       video.load();
-      video.play().catch(() => {});
+      video.play().catch((err) => console.warn('[VideoPlayer] autoplay blocked:', err));
     }
   }, [movie.streamUrl]);
 
@@ -171,7 +171,7 @@ export default function VideoPlayer({ movie, onProgressUpdate }: VideoPlayerProp
       const p = percentFromEvent(ev);
       seekToPercent(p);
       setIsScrubbing(false);
-      videoRef.current?.play().catch(() => {});
+      videoRef.current?.play().catch((err) => console.warn('[VideoPlayer] resume after scrub blocked:', err));
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
