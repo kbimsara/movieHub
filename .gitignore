@@ -401,3 +401,4 @@ jwt.secret
 .apikeys
 apikeys.txt
 service 2.0.zip
+/.claude

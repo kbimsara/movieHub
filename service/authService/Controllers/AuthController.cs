@@ -89,14 +89,18 @@ public class AuthController : ControllerBase
         var user = await _userStore.GetByEmailAsync(email, HttpContext.RequestAborted);
         if (user is null)
         {
+            _logger.LogWarning("Failed login attempt for unknown email {Email} from {IP}", email, HttpContext.Connection.RemoteIpAddress);
             return Unauthorized(ApiResponse<object>.Fail("Invalid email or password"));
         }
 
         var verification = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
         if (verification == PasswordVerificationResult.Failed)
         {
+            _logger.LogWarning("Failed login attempt for {Email} from {IP} — incorrect password", email, HttpContext.Connection.RemoteIpAddress);
             return Unauthorized(ApiResponse<object>.Fail("Invalid email or password"));
         }
+
+        _logger.LogInformation("Successful login for {Email}", email);
 
         var (accessToken, refreshToken) = await IssueTokensAsync(user, HttpContext.RequestAborted);
         return Ok(new
