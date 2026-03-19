@@ -12,6 +12,8 @@ import TorrentSeedWidget from '@/components/torrent/TorrentSeedWidget';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/components/ui/toaster';
+import apiClient from '@/lib/api';
 import {
   Play,
   Plus,
@@ -22,6 +24,7 @@ import {
   Clock,
   Star,
   Calendar,
+  Loader2,
 } from 'lucide-react';
 import { Movie } from '@/types';
 
@@ -29,6 +32,7 @@ export default function MovieDetailPage() {
   const params = useParams();
   const dispatch = useAppDispatch();
   const movieId = params.id as string;
+  const { toast } = useToast();
 
   const currentMovie = useAppSelector((state) => state.movie.currentMovie);
   const { library, addToLibrary, removeFromLibrary, toggleFavorite, updateProgress } = useUser();
@@ -37,6 +41,7 @@ export default function MovieDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [relatedMovies, setRelatedMovies] = useState<Movie[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const libraryItem = library.find((item) => item.movieId === movieId);
   const isInLibrary = !!libraryItem;
@@ -99,6 +104,102 @@ export default function MovieDetailPage() {
       addToLibrary(movieId);
     }
     toggleFavorite(movieId);
+  };
+
+  const handleDownload = async () => {
+    if (!currentMovie?.downloadUrl || isDownloading) return;
+
+    setIsDownloading(true);
+    try {
+      // Extract the relative path so apiClient can attach the auth header automatically.
+      // downloadUrl may be an absolute URL like "http://localhost:5000/api/files/abc/download".
+      let downloadPath: string;
+      try {
+        const parsed = new URL(currentMovie.downloadUrl);
+        downloadPath = parsed.pathname + parsed.search;
+      } catch {
+        // Already a relative path
+        downloadPath = currentMovie.downloadUrl;
+      }
+
+      const response = await apiClient.get(downloadPath, { responseType: 'blob' });
+
+      // Derive a sensible filename from the Content-Disposition header or fall back to the title
+      const disposition = response.headers['content-disposition'] as string | undefined;
+      let filename = `${currentMovie.title}.mp4`;
+      if (disposition) {
+        const match = disposition.match(/filename[^;=\n]*=(['"]?)([^'";\n]+)\1/);
+        if (match?.[2]) filename = match[2].trim();
+      }
+
+      const objectUrl = URL.createObjectURL(response.data as Blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(objectUrl);
+
+      toast({
+        title: 'Download started',
+        description: `"${currentMovie.title}" is being downloaded.`,
+        type: 'success',
+      });
+    } catch (err: any) {
+      console.error('Download failed:', err);
+      toast({
+        title: 'Download failed',
+        description:
+          err?.response?.data?.message ||
+          err?.message ||
+          'Unable to download this file. Please try again.',
+        type: 'error',
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!currentMovie) return;
+
+    const shareUrl = window.location.href;
+    const shareData = {
+      title: currentMovie.title,
+      text: `Watch "${currentMovie.title}" on MovieHub`,
+      url: shareUrl,
+    };
+
+    try {
+      if (typeof navigator.share === 'function' && navigator.canShare?.(shareData)) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: 'Link copied!',
+          description: 'Movie link has been copied to your clipboard.',
+          type: 'success',
+        });
+      }
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return; // User cancelled the share sheet
+      // Fallback to clipboard when navigator.share fails
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: 'Link copied!',
+          description: 'Movie link has been copied to your clipboard.',
+          type: 'success',
+        });
+      } catch {
+        toast({
+          title: 'Share failed',
+          description: 'Could not share or copy the link.',
+          type: 'error',
+        });
+      }
+    }
   };
 
   if (isLoading) {
@@ -199,13 +300,30 @@ export default function MovieDetailPage() {
               </Button>
 
               {currentMovie.downloadUrl && (
-                <Button size="lg" variant="outline" className="gap-2">
-                  <Download className="w-5 h-5" />
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="gap-2"
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                >
+                  {isDownloading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Downloading…
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-5 h-5" />
+                      Download
+                    </>
+                  )}
                 </Button>
               )}
 
-              <Button size="lg" variant="outline" className="gap-2">
+              <Button size="lg" variant="outline" className="gap-2" onClick={handleShare}>
                 <Share2 className="w-5 h-5" />
+                Share
               </Button>
             </div>
           </div>
